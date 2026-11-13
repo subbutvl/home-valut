@@ -1,8 +1,8 @@
-import { Plus, X } from 'lucide-react'
+import { Check, Plus, X } from 'lucide-react'
 import { useMemo, useState, type FormEvent } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
-import { Card, Chip } from '@/components/common'
+import { Card } from '@/components/common'
 import { FieldInput, SecretInput } from '@/components/FieldInput'
 import { AttachmentsEditor } from '@/components/Attachments'
 import { LockerContentsEditor } from '@/components/LockerContents'
@@ -13,6 +13,7 @@ import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { CATEGORY_BY_ID, itemPath } from '@/lib/categories'
 import type { Item } from '@/lib/types'
+import { cn } from '@/lib/utils'
 import { blankItem, deleteAttachmentBytes, newId, saveItem, updateSettings, useVault } from '@/lib/vault'
 
 function uniq(values: (string | undefined)[]) {
@@ -162,44 +163,65 @@ function Form({ initial, isNew }: { initial: Item; isNew: boolean }) {
         ) : null}
 
         <div className="flex flex-col gap-1.5">
-          <span className="text-[13px] font-semibold text-foreground/80">Belongs to</span>
-          <div className="flex flex-wrap gap-1.5">
-            {memberNames.map((n) => (
-              <Chip key={n} active={item.belongsTo.includes(n)} onClick={() => togglePerson(n)}>
-                {n}
-                {item.belongsTo.includes(n) ? ' ✓' : ''}
-              </Chip>
-            ))}
-            {newPerson === null ? (
-              <button
-                type="button"
-                onClick={() => setNewPerson('')}
-                className="h-9 rounded-full border border-dashed border-input px-3 text-[13px] font-semibold text-primary"
-              >
-                + Person
-              </button>
-            ) : (
-              <div className="flex gap-1.5">
-                <Input
-                  autoFocus
-                  value={newPerson}
-                  onChange={(e) => setNewPerson(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault()
-                      void addPerson()
-                    }
-                  }}
-                  placeholder="Name, e.g. Father"
-                  className="h-9 w-40"
-                />
-                <Button type="button" size="sm" className="h-9" onClick={addPerson}>
-                  Add
-                </Button>
-              </div>
-            )}
+          <div className="flex items-center justify-between">
+            <span className="text-[13px] font-semibold text-foreground/80">Belongs to</span>
+            <span className="text-xs text-muted-foreground">
+              {item.belongsTo.length > 1 ? `Joint · ${item.belongsTo.length} people` : 'Tap one or more'}
+            </span>
           </div>
-          {item.belongsTo.length > 1 && <span className="text-xs text-muted-foreground">Joint</span>}
+          {/* One row that scrolls sideways; tap to select several. */}
+          <div
+            role="group"
+            aria-label="Belongs to"
+            className="-mx-4 flex snap-x scroll-px-4 gap-1.5 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          >
+            {memberNames.map((n) => {
+              const on = item.belongsTo.includes(n)
+              return (
+                <button
+                  key={n}
+                  type="button"
+                  aria-pressed={on}
+                  onClick={() => togglePerson(n)}
+                  className={cn(
+                    'flex h-9 shrink-0 snap-start items-center gap-1 rounded-full px-3.5 text-[13px] font-semibold whitespace-nowrap',
+                    on ? 'bg-primary text-primary-foreground' : 'border border-input bg-card text-foreground',
+                  )}
+                >
+                  {on && <Check className="size-3.5" strokeWidth={3} />}
+                  {n}
+                </button>
+              )
+            })}
+            <button
+              type="button"
+              onClick={() => setNewPerson(newPerson === null ? '' : null)}
+              className="h-9 shrink-0 snap-start rounded-full border border-dashed border-input px-3 text-[13px] font-semibold whitespace-nowrap text-primary"
+            >
+              + Person
+            </button>
+          </div>
+          {newPerson !== null && (
+            <div className="flex gap-1.5">
+              <Input
+                autoFocus
+                aria-label="New person's name"
+                value={newPerson}
+                onChange={(e) => setNewPerson(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    void addPerson()
+                  }
+                }}
+                placeholder="Name, e.g. Father"
+                className="h-11"
+              />
+              <Button type="button" className="h-11" onClick={addPerson}>
+                Add
+              </Button>
+            </div>
+          )}
         </div>
 
         {main.map((f) => (
