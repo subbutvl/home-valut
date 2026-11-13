@@ -94,6 +94,16 @@ export interface Settings {
   bankLimit: number
   /** Health-check issues the user dismissed */
   dismissedChecks: string[]
+  familySheet: FamilySheetConfig
+}
+
+export interface FamilySheetConfig {
+  /** Category ids, plus 'contacts' and 'medical' */
+  sections: string[]
+  showSecrets: boolean
+  /** Where the recovery key is kept (never the key itself) */
+  keyLocation: string
+  printedAt?: number
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -107,6 +117,11 @@ export const DEFAULT_SETTINGS: Settings = {
   notifKeys: {},
   bankLimit: 500000,
   dismissedChecks: [],
+  familySheet: {
+    sections: ['bank', 'deposit', 'investment', 'insurance', 'property', 'gold', 'locker', 'vehicle', 'contacts', 'medical'],
+    showSecrets: false,
+    keyLocation: '',
+  },
 }
 
 export const BIN_DAYS = 30

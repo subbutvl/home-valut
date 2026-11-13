@@ -158,6 +158,15 @@ export default function Settings() {
         <Row label="Bin" value={binCount ? `${binCount} ${binCount === 1 ? 'item' : 'items'}` : 'Empty'} to="/settings/bin" />
       </Group>
 
+      <Group title="PRINTING">
+        <Row label="Print by category" to="/print" />
+        <Row
+          label="Emergency family sheet"
+          value={settings.familySheet.printedAt ? `Printed ${new Date(settings.familySheet.printedAt).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })}` : 'Not printed yet'}
+          to="/print/family"
+        />
+      </Group>
+
       <Group title="REMINDERS">
         <label className={rowClass}>
           <span className="flex-1 text-[15px] font-medium">Maturities, policies, warranties, IDs</span>

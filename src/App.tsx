@@ -13,6 +13,9 @@ import Backup from '@/pages/Backup'
 import ComingUp from '@/pages/ComingUp'
 import HealthCheck from '@/pages/HealthCheck'
 import Person from '@/pages/Person'
+import Print from '@/pages/Print'
+import FamilySheet from '@/pages/FamilySheet'
+import PrintItemPage from '@/pages/PrintItemPage'
 import Notifications, { NotificationDetail } from '@/pages/Notifications'
 import { addNotification, refreshNotifications } from '@/lib/notifications'
 import AddChoose from '@/pages/AddChoose'
@@ -76,6 +79,9 @@ function Vault({ notice }: { notice?: string }) {
           <Route path="coming-up" element={<ComingUp />} />
           <Route path="health" element={<HealthCheck />} />
           <Route path="person/:id" element={<Person />} />
+          <Route path="print" element={<Print />} />
+          <Route path="print/family" element={<FamilySheet />} />
+          <Route path="print/item/:id" element={<PrintItemPage />} />
           <Route path="notifications" element={<Notifications />} />
           <Route path="notifications/:id" element={<NotificationDetail />} />
           <Route path="add" element={<AddChoose />} />

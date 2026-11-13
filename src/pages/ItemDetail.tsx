@@ -1,9 +1,11 @@
-import { CalendarClock, Check, Copy as CopyIcon, Pencil, Star, Trash2 } from 'lucide-react'
+import { useState } from 'react'
+import { CalendarClock, Check, Printer, Share2, Copy as CopyIcon, Pencil, Star, Trash2 } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { CategoryIcon } from '@/components/CategoryIcon'
 import { Card, ValueRow } from '@/components/common'
 import { LockerContentsView } from '@/components/LockerContents'
+import { ShareDialog } from '@/components/ShareDialog'
 import { Button } from '@/components/ui/button'
 import { formatDate, formatINR, getCategory, type FieldDef } from '@/lib/categories'
 import { dueText, isStale, shortDate, nextDue, urgency } from '@/lib/dates'
@@ -38,6 +40,7 @@ function masked(v: string) {
 
 export function ItemDetail({ item, backTo }: { item: Item; backTo: string }) {
   const navigate = useNavigate()
+  const [sharing, setSharing] = useState(false)
   const cat = getCategory(item.category)
   const due = nextDue(item)
   const urg = urgency(due)
@@ -230,6 +233,12 @@ export function ItemDetail({ item, backTo }: { item: Item; backTo: string }) {
       )}
 
       <div className="mt-2 grid grid-cols-2 gap-2.5">
+        <Button variant="outline" onClick={() => setSharing(true)}>
+          <Share2 /> Share
+        </Button>
+        <Button variant="outline" onClick={() => navigate(`/print/item/${item.id}`)}>
+          <Printer /> Print
+        </Button>
         <Button variant="outline" onClick={onDuplicate}>
           <CopyIcon /> Duplicate
         </Button>
@@ -237,6 +246,7 @@ export function ItemDetail({ item, backTo }: { item: Item; backTo: string }) {
           <Trash2 /> Delete
         </Button>
       </div>
+      <ShareDialog item={item} open={sharing} onClose={() => setSharing(false)} />
       <p className="text-center text-xs text-muted-foreground">
         Secrets hide again after 30 seconds. Copied secrets clear from the clipboard after 30 seconds.
       </p>

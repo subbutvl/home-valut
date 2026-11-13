@@ -142,3 +142,54 @@
     margin-bottom: 8mm;
   }
 }
+
+/* Printed documents (category print, family sheet, one item). On screen they
+   are shown as a paper preview; when printing, only they are printed. */
+.print-doc {
+  background: #fff;
+  color: #111;
+  font-size: 10.5pt;
+  line-height: 1.4;
+}
+.print-doc h1 { font-size: 20pt; font-weight: 700; }
+.print-doc h2 { font-size: 13pt; font-weight: 700; border-bottom: 1.5px solid #111; padding-bottom: 2pt; margin: 14pt 0 6pt; break-after: avoid; }
+.print-doc .pd-item { break-inside: avoid; border-bottom: 0.5pt solid #bbb; padding: 5pt 0; }
+.print-doc .pd-name { font-weight: 700; font-size: 11pt; }
+.print-doc .pd-meta { color: #444; font-size: 9pt; }
+.print-doc .pd-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2pt 12pt; margin-top: 3pt; }
+.print-doc .pd-grid dt { color: #555; font-size: 8pt; }
+.print-doc .pd-grid dd { font-size: 9.5pt; overflow-wrap: anywhere; }
+.print-doc .pd-cover { break-after: page; }
+@media screen {
+  .print-doc { padding: 24px; border-radius: 12px; box-shadow: 0 1px 4px rgb(0 0 0 / 0.12); }
+  .print-doc .pd-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .print-doc .pd-cover { border-bottom: 1px dashed #bbb; padding-bottom: 16px; margin-bottom: 8px; }
+}
+@media screen and (min-width: 768px) {
+  .print-doc .pd-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media print {
+  /* Drop everything that is neither the document nor one of its containers,
+     so no blank pages are left behind. */
+  body :not(:has(.print-doc)):not(.print-doc):not(.print-doc *) {
+    display: none !important;
+  }
+  body :has(.print-doc) {
+    display: block !important;
+    position: static !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: auto !important;
+    max-width: none !important;
+    min-height: 0 !important;
+    height: auto !important;
+    overflow: visible !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    background: none !important;
+  }
+  .print-doc,
+  .print-doc * {
+    visibility: visible;
+  }
+}

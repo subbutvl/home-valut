@@ -95,6 +95,16 @@ export async function refreshNotifications() {
       body: `${p.label}: ${p.problems.map((x) => PROBLEM_TEXT[x]).join(', ')}`,
     })
 
+  // Family sheet: remind every 6 months to reprint if anything changed since.
+  const printed = s.familySheet?.printedAt
+  if (printed && now - printed > 182 * DAY && st.items.some((i) => i.updatedAt > printed))
+    add({
+      key: `family:${printed}`,
+      type: 'app',
+      title: 'Family sheet is over 6 months old and items have changed',
+      body: 'Print it again from Settings → Emergency family sheet.',
+    })
+
   const sync = await getSyncMeta()
   if (sync.connected && sync.lastSync && now - sync.lastSync > 7 * DAY)
     add({
