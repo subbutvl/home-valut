@@ -6,9 +6,17 @@ It is not an expense tracker. Balances, interest and totals are reference figure
 
 ## Status
 
-Phase 1 (this version): unlock and encryption, 17 categories with their fields, add / edit / view / duplicate / delete (with a 30-day Bin), favourites and recently viewed, search, family members, and GitHub Pages deploy.
+Phase 1: unlock and encryption, 17 categories with their fields, add / edit / view / duplicate / delete (with a 30-day Bin), favourites and recently viewed, search, family members, and GitHub Pages deploy.
 
-Coming next: Face ID unlock, Google Drive backup and sync, Coming up and in-app notifications, attachments, Excel/CSV import, printing and the family sheet, lockers, and the health checks. The tax view is on hold.
+Phase 2a: one vault on every device through Google Drive. First run offers "Create a new vault", "Open my vault from Google Drive" or "Restore from a backup file". Changes sync both ways (the newer edit of an item wins), deletions sync, password changes reach other devices, daily snapshots are kept in Drive (30 daily + 12 monthly) and can be restored, and an encrypted backup file can be exported and imported.
+
+Coming next: Face ID unlock, Coming up and in-app notifications, attachments, Excel/CSV import, printing and the family sheet, lockers, and the health checks. The tax view is on hold.
+
+## Google Drive
+
+The app talks to Google directly from the browser, with no Google script loaded. Sign-in uses OAuth 2.0 for browser apps and asks only for `drive.appdata`, so the app sees only its own hidden folder. Drive holds one file, `homevault-vault.json`: the unlock header plus the encrypted records, the same bytes that are on each device.
+
+The Google OAuth client ID is public (it is not a secret) and is set in `.env` as `VITE_GOOGLE_CLIENT_ID`. Without it, the Drive options are shown as not set up.
 
 ## How the encryption works
 

@@ -11,6 +11,10 @@ export interface VaultHeader {
   wrappedPw: Sealed
   wrappedRk: Sealed
   createdAt: number
+  /** Same on every device that shares this vault. */
+  vaultId?: string
+  /** Last time the password or recovery key changed (newest header wins in sync). */
+  updatedAt?: number
 }
 
 export interface Lockout {
@@ -19,12 +23,24 @@ export interface Lockout {
   until: number
 }
 
-export type MetaRow = VaultHeader | Lockout
+/** Google Drive sync bookkeeping for this device. */
+export interface SyncMeta {
+  id: 'sync'
+  connected: boolean
+  fileId?: string
+  lastSync?: number
+  lastSnapshot?: string // YYYY-MM-DD
+  /** Drive holds a different vault than this device */
+  mismatch?: boolean
+}
+
+export type MetaRow = VaultHeader | Lockout | SyncMeta
 
 /** Every user record is stored encrypted. `kind` and timestamps stay in clear for sync. */
 export interface EncRecord extends Sealed {
   id: string
-  kind: 'item' | 'settings'
+  /** 'tombstone' marks a permanently deleted item so the deletion syncs */
+  kind: 'item' | 'settings' | 'tombstone'
   updatedAt: number
 }
 
@@ -40,6 +56,10 @@ db.version(1).stores({
 
 export async function getHeader(): Promise<VaultHeader | undefined> {
   return (await db.meta.get('header')) as VaultHeader | undefined
+}
+
+export async function getSyncMeta(): Promise<SyncMeta> {
+  return ((await db.meta.get('sync')) as SyncMeta | undefined) ?? { id: 'sync', connected: false }
 }
 
 export async function getLockout(): Promise<Lockout> {

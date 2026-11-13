@@ -31,6 +31,10 @@ let dek: CryptoKey | null = null
 let state: State = { status: 'loading', items: [], settings: DEFAULT_SETTINGS }
 const listeners = new Set<() => void>()
 
+/** Fires after anything is saved locally, so sync can upload it. */
+export const localChanges = new EventTarget()
+const changed = () => localChanges.dispatchEvent(new Event('change'))
+
 function set(patch: Partial<State>) {
   state = { ...state, ...patch }
   listeners.forEach((l) => l())
@@ -52,7 +56,26 @@ export function getState() {
 
 export async function init() {
   const header = await getHeader()
+  // Vaults made before sync existed get an id now.
+  if (header && !header.vaultId) await db.meta.put({ ...header, vaultId: newId(), updatedAt: header.createdAt })
   set({ status: header ? 'locked' : 'new' })
+}
+
+/** Called by sync after it wrote newer records from Drive into the local database. */
+export async function reloadFromDb() {
+  if (dek) await loadAll()
+}
+
+/** Replace this device's vault (header + records) with another copy, then lock. */
+export async function replaceLocalVault(header: VaultHeader, records: EncRecord[]) {
+  dek = null
+  await db.transaction('rw', db.meta, db.records, async () => {
+    await db.records.clear()
+    await db.records.bulkPut(records)
+    await db.meta.put({ ...header, id: 'header' })
+    await db.meta.put({ id: 'lockout', fails: 0, until: 0 })
+  })
+  set({ status: 'locked', items: [], settings: DEFAULT_SETTINGS, recovered: false })
 }
 
 // ---------------------------------------------------------------------------
@@ -87,6 +110,8 @@ export async function prepareSetup(password: string): Promise<PendingSetup> {
       wrappedPw,
       wrappedRk,
       createdAt: Date.now(),
+      vaultId: newId(),
+      updatedAt: Date.now(),
     },
   }
 }
@@ -161,7 +186,8 @@ export async function changePassword(current: string, next: string): Promise<boo
   if (!dek) return false
   const saltPw = randomBytes(16)
   const wrappedPw = await wrapDek(dek, await deriveKek(next, saltPw))
-  await db.meta.put({ ...header, saltPw: toB64(saltPw), wrappedPw, iterations: PBKDF2_ITERATIONS })
+  await db.meta.put({ ...header, saltPw: toB64(saltPw), wrappedPw, iterations: PBKDF2_ITERATIONS, updatedAt: Date.now() })
+  changed()
   return true
 }
 
@@ -171,7 +197,8 @@ export async function resetPassword(next: string) {
   if (!header || !dek || !state.recovered) throw new Error("Not allowed")
   const saltPw = randomBytes(16)
   const wrappedPw = await wrapDek(dek, await deriveKek(next, saltPw))
-  await db.meta.put({ ...header, saltPw: toB64(saltPw), wrappedPw, iterations: PBKDF2_ITERATIONS })
+  await db.meta.put({ ...header, saltPw: toB64(saltPw), wrappedPw, iterations: PBKDF2_ITERATIONS, updatedAt: Date.now() })
+  changed()
   set({ recovered: false })
 }
 
@@ -187,7 +214,8 @@ export async function newRecoveryKey(password: string): Promise<string | null> {
   const recoveryKey = generateRecoveryKey()
   const saltRk = randomBytes(16)
   const wrappedRk = await wrapDek(dek, await deriveKek(normalizeRecoveryKey(recoveryKey), saltRk))
-  await db.meta.put({ ...header, saltRk: toB64(saltRk), wrappedRk })
+  await db.meta.put({ ...header, saltRk: toB64(saltRk), wrappedRk, updatedAt: Date.now() })
+  changed()
   return recoveryKey
 }
 
@@ -217,6 +245,7 @@ async function loadAll() {
   const items: Item[] = []
   let settings = DEFAULT_SETTINGS
   for (const r of rows) {
+    if (r.kind === 'tombstone') continue
     if (r.kind === 'settings') settings = { ...DEFAULT_SETTINGS, ...(await decryptJson<Settings>(key, r)) }
     else items.push(await decryptJson<Item>(key, r))
   }
@@ -226,6 +255,7 @@ async function loadAll() {
 async function putRecord(id: string, kind: EncRecord['kind'], value: unknown, updatedAt: number) {
   const sealed = await encryptJson(requireKey(), value)
   await db.records.put({ id, kind, updatedAt, ...sealed })
+  changed()
 }
 
 export async function saveSettings(next: Settings) {
@@ -261,7 +291,9 @@ export async function restoreFromBin(id: string) {
 }
 
 export async function deleteForever(id: string) {
-  await db.records.delete(id)
+  // Keep a tombstone so the deletion reaches other devices.
+  await db.records.put({ id, kind: 'tombstone', updatedAt: Date.now(), iv: '', ct: '' })
+  changed()
   set({ items: state.items.filter((i) => i.id !== id) })
 }
 
@@ -304,5 +336,7 @@ export function blankItem(category: string): Item {
 export async function eraseDevice() {
   dek = null
   await db.delete()
+  localStorage.clear()
+  sessionStorage.clear()
   location.reload()
 }

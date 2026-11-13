@@ -1,11 +1,15 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { toast } from 'sonner'
 import { useRegisterSW } from 'virtual:pwa-register/react'
 import { AppShell } from '@/components/AppShell'
 import { Toaster } from '@/components/ui/sonner'
 import { useAutoLock } from '@/lib/secure-ui'
-import { init, useVault } from '@/lib/vault'
+import { getSyncMeta } from '@/lib/db'
+import { getToken, startSignIn, type RedirectResult } from '@/lib/drive'
+import { loadSyncState, markConnected, openFromDrive, setConflictHandler, startAutoSync, syncNow } from '@/lib/sync'
+import { getState, init, useVault } from '@/lib/vault'
+import Backup from '@/pages/Backup'
 import AddChoose from '@/pages/AddChoose'
 import Bin from '@/pages/Bin'
 import CategoryPage from '@/pages/CategoryPage'
@@ -33,12 +37,15 @@ function UpdatePrompt() {
   return null
 }
 
-function Vault() {
+function Vault({ notice }: { notice?: string }) {
   const { status, recovered, settings } = useVault()
   useAutoLock(status === 'unlocked', settings.autoLockMinutes)
+  useEffect(() => {
+    if (status === 'unlocked') void syncNow()
+  }, [status])
 
   if (status === 'loading') return null
-  if (status === 'new') return <Setup />
+  if (status === 'new') return <Setup notice={notice} />
   if (status === 'locked') return <Unlock />
   if (recovered) return <ResetPassword />
   return (
@@ -55,6 +62,7 @@ function Vault() {
           <Route path="settings" element={<Settings />} />
           <Route path="settings/members" element={<Members />} />
           <Route path="settings/bin" element={<Bin />} />
+          <Route path="settings/backup" element={<Backup />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>
@@ -62,13 +70,55 @@ function Vault() {
   )
 }
 
-export default function App() {
+const NO_AUTO = 'hv-no-auto-signin'
+let started = false
+
+/** Startup: open the local vault, then act on a Google sign-in we just came back from. */
+async function start(redirect: RedirectResult | null, setNotice: (s: string) => void) {
+  if (started) return
+  started = true
+  await init()
+  await loadSyncState()
+  startAutoSync()
+  setConflictHandler((names) =>
+    toast(`${names.join(', ')} ${names.length === 1 ? 'was' : 'were'} also changed on another device. Kept the newer version.`),
+  )
+  if (redirect && !redirect.ok) {
+    if (redirect.purpose === 'refresh') sessionStorage.setItem(NO_AUTO, '1')
+    else setNotice('Google sign-in did not finish. Try again.')
+    return
+  }
+  if (redirect?.purpose === 'open') {
+    try {
+      if (!(await openFromDrive()))
+        setNotice(
+          "No HomeVault was found in this Google account's Drive. Create the vault on your main device and connect Drive there first, or sign in with the other Google account.",
+        )
+    } catch (e) {
+      setNotice((e as Error).message)
+    }
+    return
+  }
+  if (redirect?.purpose === 'connect') {
+    await markConnected()
+    toast.success('Google Drive connected. Unlock to sync.')
+    return
+  }
+  if (redirect) return
+  // Connected but the 1-hour Google token has expired: renew it quietly before unlocking.
+  const meta = await getSyncMeta()
+  if (meta.connected && !getToken() && navigator.onLine && !sessionStorage.getItem(NO_AUTO) && getState().status === 'locked')
+    startSignIn('refresh', true)
+}
+
+export default function App({ redirect }: { redirect: RedirectResult | null }) {
+  const [notice, setNotice] = useState<string>()
   useEffect(() => {
-    void init()
-  }, [])
+    void start(redirect, setNotice)
+  }, [redirect])
   return (
     <>
-      <Vault />
+      <Vault notice={notice} />
       <Toaster />
       <UpdatePrompt />
     </>

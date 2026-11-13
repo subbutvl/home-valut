@@ -1,14 +1,87 @@
-import { useState } from 'react'
+import { ChevronLeft, Lock } from 'lucide-react'
+import { useRef, useState } from 'react'
 import { NewPassword, isAcceptable } from '@/components/NewPassword'
 import { RecoveryKeyCard } from '@/components/RecoveryKeyCard'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { readBackupFile, restoreBackupFile } from '@/lib/backup-file'
 import { normalizeRecoveryKey } from '@/lib/crypto'
+import { driveConfigured, startSignIn } from '@/lib/drive'
 import { cn } from '@/lib/utils'
 import { finishSetup, prepareSetup, type PendingSetup } from '@/lib/vault'
 
-export default function Setup() {
+export default function Setup({ notice }: { notice?: string }) {
+  const [creating, setCreating] = useState(false)
+  if (!creating) return <Choose notice={notice} onCreate={() => setCreating(true)} />
+  return <Create onBack={() => setCreating(false)} />
+}
+
+function Choose({ notice, onCreate }: { notice?: string; onCreate: () => void }) {
+  const [error, setError] = useState('')
+  const fileRef = useRef<HTMLInputElement>(null)
+  return (
+    <main className="mx-auto flex min-h-dvh max-w-md flex-col gap-5 px-6 pt-20 pb-8">
+      <div className="flex size-16 items-center justify-center rounded-[18px] bg-primary text-primary-foreground">
+        <Lock className="size-8" strokeWidth={1.8} />
+      </div>
+      <h1 className="text-[26px] font-bold">Welcome to HomeVault</h1>
+      <p className="text-[15px] leading-relaxed text-foreground/80">
+        A private, encrypted place for your accounts, policies, IDs and renewals. Use one vault on all your devices, with
+        one master password and one recovery key.
+      </p>
+      {(notice || error) && (
+        <p role="alert" className="rounded-xl bg-warn-bg px-4 py-3 text-sm text-warn-fg">
+          {error || notice}
+        </p>
+      )}
+      <div className="flex flex-col gap-3 pt-2">
+        <button type="button" onClick={onCreate} className={choiceClass}>
+          <span className="text-base font-semibold">Create a new vault</span>
+          <span className="text-sm text-muted-foreground">First time using HomeVault. Do this on one device only.</span>
+        </button>
+        <button
+          type="button"
+          disabled={!driveConfigured()}
+          onClick={() => startSignIn('open')}
+          className={choiceClass}
+        >
+          <span className="text-base font-semibold">Open my vault from Google Drive</span>
+          <span className="text-sm text-muted-foreground">
+            {driveConfigured()
+              ? 'Already using HomeVault on another device? Sign in to Google, then unlock with your usual master password.'
+              : 'Google Drive is not set up in this version yet.'}
+          </span>
+        </button>
+        <button type="button" onClick={() => fileRef.current?.click()} className={choiceClass}>
+          <span className="text-base font-semibold">Restore from a backup file</span>
+          <span className="text-sm text-muted-foreground">A homevault-backup file you exported earlier.</span>
+        </button>
+        <input
+          ref={fileRef}
+          type="file"
+          accept="application/json,.json"
+          className="hidden"
+          onChange={async (e) => {
+            const f = e.target.files?.[0]
+            e.target.value = ''
+            if (!f) return
+            try {
+              await restoreBackupFile(await readBackupFile(f))
+            } catch (err) {
+              setError((err as Error).message)
+            }
+          }}
+        />
+      </div>
+    </main>
+  )
+}
+
+const choiceClass =
+  'flex flex-col items-start gap-1 rounded-2xl border bg-card px-4 py-4 text-left hover:border-primary/50 disabled:opacity-50'
+
+function Create({ onBack }: { onBack: () => void }) {
   const [step, setStep] = useState(0)
   const [pw, setPw] = useState('')
   const [pw2, setPw2] = useState('')
@@ -20,7 +93,12 @@ export default function Setup() {
   const last4ok = normalizeRecoveryKey(last4) === keyTail
 
   return (
-    <main className="mx-auto flex min-h-dvh max-w-md flex-col gap-5 px-6 pt-14 pb-8">
+    <main className="mx-auto flex min-h-dvh max-w-md flex-col gap-5 px-6 pt-8 pb-8">
+      {step === 0 && (
+        <button type="button" onClick={onBack} aria-label="Back" className="-ml-3 flex size-11 items-center justify-center">
+          <ChevronLeft className="size-6" />
+        </button>
+      )}
       <div className="flex gap-1.5" aria-hidden="true">
         {[0, 1, 2].map((i) => (
           <div key={i} className={cn('h-1 flex-1 rounded-full', i <= step ? 'bg-primary' : 'bg-input')} />
@@ -30,10 +108,10 @@ export default function Setup() {
 
       {step === 0 && (
         <>
-          <h1 className="text-2xl font-bold">Welcome to HomeVault</h1>
+          <h1 className="text-2xl font-bold">Choose a master password</h1>
           <p className="text-[15px] leading-relaxed text-foreground/80">
-            Everything you keep here is encrypted on this device with your master password. It is never stored or sent
-            anywhere, so choose one you will remember.
+            Everything in your vault is encrypted with it. It is never stored or sent anywhere, so choose one you will
+            remember. You will use the same password on all your devices.
           </p>
           <NewPassword value={pw} confirm={pw2} onChange={setPw} onConfirm={setPw2} />
           <div className="flex-1" />
@@ -91,7 +169,7 @@ export default function Setup() {
           <ul className="flex list-disc flex-col gap-2 pl-5 text-[15px] leading-relaxed text-foreground/80">
             <li>Your vault lives on this device, encrypted.</li>
             <li>It locks itself after 1 minute without use, and straight away when you leave the app on a phone.</li>
-            <li>Google Drive backup and phone/laptop sync come in the next update. Until then, keep using one device.</li>
+            <li>Next, connect Google Drive in Settings. That backs up your vault and lets your other devices open the same one.</li>
             <li>
               On iPhone, open this page in Safari, tap Share, then <strong>Add to Home Screen</strong>.
             </li>

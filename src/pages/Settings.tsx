@@ -6,6 +6,7 @@ import { Page } from '@/components/AppShell'
 import { NewPassword, isAcceptable } from '@/components/NewPassword'
 import { RecoveryKeyCard } from '@/components/RecoveryKeyCard'
 import { Card, PageHeader } from '@/components/common'
+import { SyncStatus } from '@/components/SyncStatus'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
@@ -63,10 +64,13 @@ export default function Settings() {
     <Page>
       <PageHeader title="Settings" />
 
-      <div className="rounded-xl bg-warn-bg px-4 py-3.5 text-sm leading-snug text-warn-fg">
-        <strong>No backup yet.</strong> Your vault is only on this device until Google Drive backup arrives in the next
-        update. Keep the recovery key safe and avoid clearing this browser's site data.
-      </div>
+      <Group title="GOOGLE DRIVE">
+        <Link to="/settings/backup" className={rowClass}>
+          <span className="flex-1 text-[15px] font-medium">Backup and sync</span>
+          <SyncStatus />
+          <ChevronRight className="size-4 text-muted-foreground" />
+        </Link>
+      </Group>
 
       <Group title="SECURITY">
         <label className={rowClass}>
@@ -108,7 +112,7 @@ export default function Settings() {
           className={`${rowClass} text-destructive`}
           onClick={async () => {
             if (
-              confirm('Erase the vault from this device?\n\nEverything stored here is deleted. There is no backup yet, so it cannot be recovered.') &&
+              confirm('Erase the vault from this device?\n\nEverything stored on this device is deleted. Your Google Drive copy, if connected, is not touched.') &&
               prompt('Type ERASE to confirm') === 'ERASE'
             )
               await eraseDevice()

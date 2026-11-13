@@ -2,6 +2,7 @@ import { Lock, Search } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Page } from '@/components/AppShell'
 import { FavStar, TileMark } from '@/components/common'
+import { SyncStatus } from '@/components/SyncStatus'
 import { CATEGORIES, getCategory, itemPath } from '@/lib/categories'
 import type { Item } from '@/lib/types'
 import { lock, useVault } from '@/lib/vault'
@@ -24,9 +25,7 @@ export default function Home() {
       <header className="flex items-center justify-between">
         <div className="flex flex-col gap-0.5">
           <h1 className="text-[26px] font-bold">HomeVault</h1>
-          <p className="text-[13px] text-muted-foreground">
-            {live.length} {live.length === 1 ? 'item' : 'items'} · stored on this device
-          </p>
+          <SyncStatus />
         </div>
         <button
           type="button"
