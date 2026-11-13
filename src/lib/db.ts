@@ -47,6 +47,16 @@ export interface BioMeta {
 
 export type MetaRow = VaultHeader | Lockout | SyncMeta | BioMeta
 
+/** An attachment's bytes, encrypted with the data key (AES-GCM). */
+export interface FileRow {
+  id: string
+  iv: string
+  data: ArrayBuffer
+  /** Already copied to Google Drive */
+  uploaded?: boolean
+  createdAt: number
+}
+
 /** Every user record is stored encrypted. `kind` and timestamps stay in clear for sync. */
 export interface EncRecord extends Sealed {
   id: string
@@ -58,11 +68,17 @@ export interface EncRecord extends Sealed {
 export const db = new Dexie('homevault') as Dexie & {
   meta: Table<MetaRow, string>
   records: EntityTable<EncRecord, 'id'>
+  files: EntityTable<FileRow, 'id'>
 }
 
 db.version(1).stores({
   meta: 'id',
   records: 'id, kind, updatedAt',
+})
+db.version(2).stores({
+  meta: 'id',
+  records: 'id, kind, updatedAt',
+  files: 'id',
 })
 
 export async function getHeader(): Promise<VaultHeader | undefined> {

@@ -70,7 +70,8 @@ export async function reloadFromDb() {
 /** Replace this device's vault (header + records) with another copy, then lock. */
 export async function replaceLocalVault(header: VaultHeader, records: EncRecord[]) {
   dek = null
-  await db.transaction('rw', db.meta, db.records, async () => {
+  await db.transaction('rw', db.meta, db.records, db.files, async () => {
+    await db.files.clear()
     await db.records.clear()
     await db.records.bulkPut(records)
     await db.meta.put({ ...header, id: 'header' })
@@ -324,7 +325,31 @@ export async function restoreFromBin(id: string) {
   if (item) await saveItem({ ...item, deletedAt: undefined })
 }
 
+// ---------------------------------------------------------------------------
+// Attachments: bytes are encrypted with the same data key, stored apart from items.
+
+export async function putAttachmentBytes(bytes: ArrayBuffer): Promise<string> {
+  const iv = randomBytes(12)
+  const data = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, requireKey(), bytes)
+  const id = newId()
+  await db.files.put({ id, iv: toB64(iv), data, uploaded: false, createdAt: Date.now() })
+  return id
+}
+
+export async function readAttachment(id: string, type: string): Promise<Blob | null> {
+  const row = await db.files.get(id)
+  if (!row) return null
+  const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: fromB64(row.iv) }, requireKey(), row.data)
+  return new Blob([plain], { type })
+}
+
+export async function deleteAttachmentBytes(ids: string[]) {
+  await db.files.bulkDelete(ids)
+}
+
 export async function deleteForever(id: string) {
+  const gone = state.items.find((i) => i.id === id)
+  if (gone?.attachments?.length) await deleteAttachmentBytes(gone.attachments.map((a) => a.id))
   // Keep a tombstone so the deletion reaches other devices.
   await db.records.put({ id, kind: 'tombstone', updatedAt: Date.now(), iv: '', ct: '' })
   changed()

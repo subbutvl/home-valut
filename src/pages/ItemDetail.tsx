@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { CategoryIcon } from '@/components/CategoryIcon'
 import { Card, ValueRow } from '@/components/common'
+import { AttachmentsView } from '@/components/Attachments'
 import { LockerContentsView } from '@/components/LockerContents'
 import { ShareDialog } from '@/components/ShareDialog'
 import { Button } from '@/components/ui/button'
@@ -61,7 +62,7 @@ export function ItemDetail({ item, backTo }: { item: Item; backTo: string }) {
     navigate(backTo)
   }
   const onDuplicate = async () => {
-    const copy = await saveItem({ ...item, id: newId(), name: `${item.name} (copy)`, favourite: false, createdAt: 0 })
+    const copy = await saveItem({ ...item, id: newId(), name: `${item.name} (copy)`, favourite: false, createdAt: 0, attachments: undefined })
     navigate(`/edit/${copy.id}`)
   }
 
@@ -204,6 +205,8 @@ export function ItemDetail({ item, backTo }: { item: Item; backTo: string }) {
 
       {item.lockerContents?.length ? <LockerContentsView value={item.lockerContents} /> : null}
 
+      {item.attachments?.length ? <AttachmentsView value={item.attachments} /> : null}
+
       {(item.notes || item.tags.length > 0) && (
         <Card className="flex flex-col gap-2 p-4">
           {item.notes && (
@@ -228,7 +231,7 @@ export function ItemDetail({ item, backTo }: { item: Item; backTo: string }) {
         </Card>
       )}
 
-      {filled.length === 0 && item.custom.length === 0 && !item.notes && (
+      {filled.length === 0 && item.custom.length === 0 && !item.notes && !item.attachments?.length && !item.lockerContents?.length && (
         <p className="text-sm text-muted-foreground">Nothing else saved yet. Tap Edit to add details.</p>
       )}
 

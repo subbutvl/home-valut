@@ -1,9 +1,9 @@
-import { buildVaultFile, isVaultFile, type VaultFile } from './sync'
+import { buildVaultFile, isVaultFile, restoreFiles, type VaultFile } from './sync'
 import { replaceLocalVault } from './vault'
 
 /** Save an encrypted backup file to the computer (or Files on iPhone). */
 export async function exportBackupFile() {
-  const data = await buildVaultFile()
+  const data = await buildVaultFile(true)
   const blob = new Blob([JSON.stringify(data)], { type: 'application/json' })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
@@ -30,4 +30,5 @@ export async function readBackupFile(file: File): Promise<VaultFile> {
 /** Replace this device's vault with the backup. It then asks for that backup's password. */
 export async function restoreBackupFile(data: VaultFile) {
   await replaceLocalVault(data.header, data.records)
+  if (data.files?.length) await restoreFiles(data.files)
 }

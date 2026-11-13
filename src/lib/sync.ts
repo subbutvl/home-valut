@@ -15,6 +15,10 @@ import {
   getToken,
   listFiles,
   upload,
+  uploadBinary,
+  downloadBinary,
+  listFolder,
+  type Folders,
   type DriveFile,
 } from './drive'
 import { getState, localChanges, reloadFromDb, replaceLocalVault } from './vault'
@@ -26,6 +30,8 @@ export interface VaultFile {
   savedAt: number
   header: VaultHeader
   records: EncRecord[]
+  /** Attachments, only in exported backup files (still encrypted) */
+  files?: { id: string; iv: string; data: string }[]
 }
 
 export type SyncStatus = 'off' | 'idle' | 'syncing' | 'signin' | 'offline' | 'error' | 'mismatch'
@@ -68,10 +74,20 @@ export async function loadSyncState() {
   set({ status: !m.connected ? 'off' : m.mismatch ? 'mismatch' : 'idle', lastSync: m.lastSync })
 }
 
-export async function buildVaultFile(): Promise<VaultFile> {
+export async function buildVaultFile(withFiles = false): Promise<VaultFile> {
   const header = await getHeader()
   if (!header) throw new Error('No vault on this device')
-  return { format: 'homevault', version: 1, savedAt: Date.now(), header, records: await db.records.toArray() }
+  const out: VaultFile = { format: 'homevault', version: 1, savedAt: Date.now(), header, records: await db.records.toArray() }
+  if (withFiles)
+    out.files = (await db.files.toArray()).map((r) => ({ id: r.id, iv: r.iv, data: toB64(new Uint8Array(r.data)) }))
+  return out
+}
+
+/** Put attachment bytes from a backup file into this device. */
+export async function restoreFiles(files: NonNullable<VaultFile['files']>) {
+  await db.files.bulkPut(
+    files.map((f) => ({ id: f.id, iv: f.iv, data: fromB64(f.data).buffer, uploaded: false, createdAt: Date.now() })),
+  )
 }
 
 export function isVaultFile(x: unknown): x is VaultFile {
@@ -142,12 +158,15 @@ async function doSync() {
       await mergeRemote(remote, meta.lastSync ?? 0)
     }
 
+    // Attachments go up before the vault that points at them.
+    await uploadAttachments(f)
     const merged = await buildVaultFile()
     fileId = await upload(VAULT_FILE, merged, fileId, f.root)
     const now = Date.now()
     await saveMeta({ fileId, store: 'folder', lastSync: now })
     if (legacyId) await deleteFile(legacyId).catch(() => {})
     await maybeSnapshot(fileId, f.snaps)
+    await tidyAttachments(f).catch(() => {})
     set({ status: 'idle', lastSync: now })
   } catch (e) {
     if (e instanceof DriveAuthError) set({ status: 'signin', error: e.message })
@@ -178,6 +197,62 @@ async function mergeRemote(remote: VaultFile, lastSync: number) {
     const names = conflicts.map((id) => getState().items.find((i) => i.id === id)?.name).filter(Boolean) as string[]
     if (names.length) onConflict(names)
   }
+}
+
+// ---------------------------------------------------------------------------
+// Attachments: each is its own encrypted file in HomeVault/Attachments, named by id.
+// Other devices download one only when it is opened, to save mobile data.
+
+const fromB64 = (b: string) => Uint8Array.from(atob(b), (c) => c.charCodeAt(0))
+const toB64 = (u: Uint8Array) => btoa(Array.from(u, (c) => String.fromCharCode(c)).join(''))
+
+async function uploadAttachments(f: Folders) {
+  const pending = await db.files.filter((r) => !r.uploaded).toArray()
+  for (const r of pending) {
+    // Stored on Drive as 12-byte IV followed by the ciphertext.
+    const iv = fromB64(r.iv)
+    const bytes = new Uint8Array(iv.length + r.data.byteLength)
+    bytes.set(iv)
+    bytes.set(new Uint8Array(r.data), iv.length)
+    await uploadBinary(`${r.id}.bin`, bytes, f.files)
+    await db.files.update(r.id, { uploaded: true })
+  }
+}
+
+function referencedIds(): Set<string> | null {
+  const st = getState()
+  if (st.status !== 'unlocked') return null
+  return new Set(st.items.flatMap((i) => (i.attachments ?? []).map((a) => a.id)))
+}
+
+/** Remove attachment copies nothing refers to any more (kept 30 days on Drive, for snapshots). */
+async function tidyAttachments(f: Folders) {
+  const refs = referencedIds()
+  if (!refs) return
+  const day = 86_400_000
+  for (const r of await db.files.toArray())
+    if (!refs.has(r.id) && (r.uploaded || Date.now() - r.createdAt > day)) await db.files.delete(r.id)
+  for (const file of await listFolder(f.files)) {
+    const id = file.name.replace(/.bin$/, '')
+    if (!refs.has(id) && Date.now() - new Date(file.modifiedTime).getTime() > 30 * day) await deleteFile(file.id).catch(() => {})
+  }
+}
+
+/** Fetch one attachment from Drive when this device does not have it yet. */
+export async function fetchAttachment(id: string): Promise<boolean> {
+  if (!getToken()) return false
+  const f = await folders()
+  const file = await findFile(`${id}.bin`, f.files)
+  if (!file) return false
+  const all = new Uint8Array(await downloadBinary(file.id))
+  await db.files.put({
+    id,
+    iv: toB64(all.slice(0, 12)),
+    data: all.slice(12).buffer,
+    uploaded: true,
+    createdAt: Date.now(),
+  })
+  return true
 }
 
 // ---------------------------------------------------------------------------

@@ -12,7 +12,9 @@ Phase 2a: one vault on every device through Google Drive. First run offers "Crea
 
 Phase 2b: Face ID / fingerprint unlock (passkey with WebAuthn PRF, master password every 7 days), Coming up with Mark done, in-app Notifications centre, subscription total.
 
-Coming next: attachments, Excel/CSV import, printing and the family sheet, lockers, and the health checks. The tax view is on hold.
+Phase 3: health check (missing nominee, ₹5 lakh bank limit, password health), family member pages with emergency medical info, bank locker contents, category-wise printing, the emergency family sheet, sharing one item (text or PDF), Excel/CSV import with template and undo, and encrypted photo/PDF attachments (synced as separate encrypted files in HomeVault/Attachments, fetched on demand on other devices).
+
+The tax view is on hold.
 
 ## Google Drive
 

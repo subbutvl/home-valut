@@ -10,6 +10,14 @@ export interface CustomField {
   secret?: boolean
 }
 
+export interface Attachment {
+  id: string
+  name: string
+  type: string
+  size: number
+  addedAt: number
+}
+
 export interface Item {
   id: string
   category: string
@@ -29,6 +37,7 @@ export interface Item {
   leadDays?: number
   /** Set on items added by an Excel/CSV import, so the import can be undone */
   importId?: string
+  attachments?: Attachment[]
   /** Bank lockers: what is inside */
   lockerContents?: LockerEntry[]
   createdAt: number

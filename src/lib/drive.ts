@@ -218,17 +218,24 @@ async function ensureFolder(name: string, parent?: string): Promise<string> {
   return ((await res.json()) as { id: string }).id
 }
 
-let folderCache: { root: string; snaps: string } | null = null
+export interface Folders {
+  root: string
+  snaps: string
+  files: string
+}
+
+let folderCache: Folders | null = null
 
 /**
  * The visible "HomeVault" folder in My Drive (with a "Snapshots" folder inside).
  * With the drive.file permission the app sees only what it created itself.
  */
-export async function folders(): Promise<{ root: string; snaps: string }> {
+export async function folders(): Promise<Folders> {
   if (folderCache) return folderCache
   const root = await ensureFolder(FOLDER)
   const snaps = await ensureFolder(SNAP_FOLDER, root)
-  folderCache = { root, snaps }
+  const files = await ensureFolder('Attachments', root)
+  folderCache = { root, snaps, files }
   return folderCache
 }
 
@@ -294,4 +301,32 @@ export async function copyFile(id: string, name: string, folderId: string): Prom
 
 export async function deleteFile(id: string): Promise<void> {
   await call(`${API}/files/${id}`, { method: 'DELETE' })
+}
+
+/** Upload encrypted attachment bytes as a new file. */
+export async function uploadBinary(name: string, bytes: Uint8Array<ArrayBuffer>, folderId: string): Promise<string> {
+  const boundary = `hv${crypto.randomUUID()}`
+  const meta = JSON.stringify({ name, parents: [folderId], mimeType: 'application/octet-stream' })
+  const body = new Blob([
+    `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${meta}\r\n` +
+      `--${boundary}\r\nContent-Type: application/octet-stream\r\n\r\n`,
+    bytes,
+    `\r\n--${boundary}--`,
+  ])
+  const res = await call(`${UPLOAD}/files?uploadType=multipart&fields=id`, {
+    method: 'POST',
+    headers: { 'Content-Type': `multipart/related; boundary=${boundary}` },
+    body,
+  })
+  return ((await res.json()) as { id: string }).id
+}
+
+export async function downloadBinary(id: string): Promise<ArrayBuffer> {
+  const res = await call(`${API}/files/${id}?alt=media`)
+  return res.arrayBuffer()
+}
+
+/** Every file in a folder (id, name, modified time), across pages. */
+export async function listFolder(folderId: string): Promise<DriveFile[]> {
+  return query(`'${folderId}' in parents`)
 }

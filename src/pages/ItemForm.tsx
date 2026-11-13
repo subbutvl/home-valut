@@ -4,6 +4,7 @@ import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Card, Chip } from '@/components/common'
 import { FieldInput, SecretInput } from '@/components/FieldInput'
+import { AttachmentsEditor } from '@/components/Attachments'
 import { LockerContentsEditor } from '@/components/LockerContents'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -12,7 +13,7 @@ import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { CATEGORY_BY_ID, itemPath } from '@/lib/categories'
 import type { Item } from '@/lib/types'
-import { blankItem, newId, saveItem, updateSettings, useVault } from '@/lib/vault'
+import { blankItem, deleteAttachmentBytes, newId, saveItem, updateSettings, useVault } from '@/lib/vault'
 
 function uniq(values: (string | undefined)[]) {
   return [...new Set(values.map((v) => v?.trim()).filter((v): v is string => !!v))].sort((a, b) => a.localeCompare(b))
@@ -92,6 +93,10 @@ function Form({ initial, isNew }: { initial: Item; isNew: boolean }) {
       custom: item.custom.filter((c) => c.label.trim() || c.value.trim()),
       lockerContents: item.lockerContents?.filter((e) => e.item.trim()),
     })
+    // Files taken off the item are deleted from this device.
+    const kept = new Set((item.attachments ?? []).map((a) => a.id))
+    const removed = (initial.attachments ?? []).filter((a) => !kept.has(a.id)).map((a) => a.id)
+    if (removed.length) await deleteAttachmentBytes(removed)
     toast.success(isNew ? 'Saved' : 'Changes saved')
     navigate(itemPath(saved), { replace: true })
   }
@@ -365,6 +370,11 @@ function Form({ initial, isNew }: { initial: Item; isNew: boolean }) {
           </div>
         </div>
       </details>
+
+      <Card className="flex flex-col gap-3 p-4">
+        <span className="text-[15px] font-semibold">Attachments</span>
+        <AttachmentsEditor value={item.attachments ?? []} onChange={(attachments) => setItem({ ...item, attachments })} />
+      </Card>
 
       <Card className="flex flex-col gap-3 p-4">
         <span className="text-[15px] font-semibold">Custom fields</span>
