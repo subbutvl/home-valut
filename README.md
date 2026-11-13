@@ -16,7 +16,7 @@ Coming next: attachments, Excel/CSV import, printing and the family sheet, locke
 
 ## Google Drive
 
-The app talks to Google directly from the browser, with no Google script loaded. Sign-in uses OAuth 2.0 for browser apps and asks only for `drive.appdata`, so the app sees only its own hidden folder. Drive holds one file, `homevault-vault.json`: the unlock header plus the encrypted records, the same bytes that are on each device.
+The app talks to Google directly from the browser, with no Google script loaded. Sign-in uses OAuth 2.0 for browser apps and asks for `drive.file`, so the app sees only files and folders it created itself. Everything lives in a visible **HomeVault** folder in My Drive: `homevault-vault.json` (the unlock header plus the encrypted records, the same bytes that are on each device) and a `Snapshots` folder with the daily copies. `drive.appdata` is also requested, only to move a copy saved by the first sync version into the folder. Don't rename or move the HomeVault folder; if it can't be found, the app creates a new one.
 
 The Google OAuth client ID is public (it is not a secret) and is set in `.env` as `VITE_GOOGLE_CLIENT_ID`. Without it, the Drive options are shown as not set up.
 

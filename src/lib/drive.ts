@@ -2,11 +2,14 @@
 //
 // Sign-in uses Google's OAuth 2.0 flow for browser apps: the page goes to
 // accounts.google.com and comes back with a short-lived access token in the
-// address. The token only allows the app's own hidden folder (drive.appdata),
-// never the user's other files. Everything uploaded is already encrypted.
+// address. The token only reaches files this app created (drive.file): a
+// "HomeVault" folder in My Drive. Never the user's other files. Everything
+// uploaded is already encrypted.
 
 export const CLIENT_ID: string = import.meta.env.VITE_GOOGLE_CLIENT_ID ?? ''
-const SCOPE = 'https://www.googleapis.com/auth/drive.appdata'
+// drive.file: only files and folders this app created (the HomeVault folder).
+// drive.appdata: only to move a copy saved by the first sync version into the folder.
+const SCOPE = 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.appdata'
 const TOKEN_KEY = 'hv-drive-token'
 const PENDING_KEY = 'hv-oauth'
 const API = 'https://www.googleapis.com/drive/v3'
@@ -107,11 +110,14 @@ export interface DriveFile {
   size?: string
 }
 
-export async function listFiles(namePrefix?: string): Promise<DriveFile[]> {
-  const q = namePrefix ? `name contains '${namePrefix}' and trashed = false` : 'trashed = false'
+export const FOLDER = 'HomeVault'
+const SNAP_FOLDER = 'Snapshots'
+const FOLDER_MIME = 'application/vnd.google-apps.folder'
+
+async function query(q: string, space: 'drive' | 'appDataFolder' = 'drive'): Promise<DriveFile[]> {
   const p = new URLSearchParams({
-    spaces: 'appDataFolder',
-    q,
+    spaces: space,
+    q: `${q} and trashed = false`,
     fields: 'files(id,name,modifiedTime,size)',
     pageSize: '1000',
     orderBy: 'name desc',
@@ -120,8 +126,54 @@ export async function listFiles(namePrefix?: string): Promise<DriveFile[]> {
   return ((await res.json()) as { files: DriveFile[] }).files
 }
 
-export async function findFile(name: string): Promise<DriveFile | null> {
-  return (await listFiles(name)).find((f) => f.name === name) ?? null
+const esc = (s: string) => s.replace(/\\/g, '\\\\').replace(/'/g, "\\'")
+
+async function ensureFolder(name: string, parent?: string): Promise<string> {
+  const inParent = parent ? ` and '${parent}' in parents` : " and 'root' in parents"
+  const found = await query(`name = '${esc(name)}' and mimeType = '${FOLDER_MIME}'${inParent}`)
+  if (found[0]) return found[0].id
+  const res = await call(`${API}/files?fields=id`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, mimeType: FOLDER_MIME, parents: parent ? [parent] : ['root'] }),
+  })
+  return ((await res.json()) as { id: string }).id
+}
+
+let folderCache: { root: string; snaps: string } | null = null
+
+/**
+ * The visible "HomeVault" folder in My Drive (with a "Snapshots" folder inside).
+ * With the drive.file permission the app sees only what it created itself.
+ */
+export async function folders(): Promise<{ root: string; snaps: string }> {
+  if (folderCache) return folderCache
+  const root = await ensureFolder(FOLDER)
+  const snaps = await ensureFolder(SNAP_FOLDER, root)
+  folderCache = { root, snaps }
+  return folderCache
+}
+
+export function forgetFolders() {
+  folderCache = null
+}
+
+/** Files in a folder whose name contains the text. */
+export async function listFiles(namePart: string, folderId: string): Promise<DriveFile[]> {
+  return query(`name contains '${esc(namePart)}' and '${folderId}' in parents`)
+}
+
+export async function findFile(name: string, folderId: string): Promise<DriveFile | null> {
+  return (await listFiles(name, folderId)).find((f) => f.name === name) ?? null
+}
+
+/** A vault file left in the hidden app folder by the first version of sync. */
+export async function findLegacyFile(name: string): Promise<DriveFile | null> {
+  try {
+    return (await query(`name = '${esc(name)}'`, 'appDataFolder'))[0] ?? null
+  } catch {
+    return null
+  }
 }
 
 export async function download<T>(id: string): Promise<T> {
@@ -129,8 +181,8 @@ export async function download<T>(id: string): Promise<T> {
   return (await res.json()) as T
 }
 
-/** Create (no id) or overwrite (id) a JSON file in the app folder. Returns the file id. */
-export async function upload(name: string, body: unknown, id?: string): Promise<string> {
+/** Create (no id) or overwrite (id) a JSON file in a folder. Returns the file id. */
+export async function upload(name: string, body: unknown, id: string | undefined, folderId: string): Promise<string> {
   const json = JSON.stringify(body)
   if (id) {
     const res = await call(`${UPLOAD}/files/${id}?uploadType=media&fields=id`, {
@@ -141,7 +193,7 @@ export async function upload(name: string, body: unknown, id?: string): Promise<
     return ((await res.json()) as { id: string }).id
   }
   const boundary = `hv${crypto.randomUUID()}`
-  const meta = JSON.stringify({ name, parents: ['appDataFolder'], mimeType: 'application/json' })
+  const meta = JSON.stringify({ name, parents: [folderId], mimeType: 'application/json' })
   const multipart =
     `--${boundary}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${meta}\r\n` +
     `--${boundary}\r\nContent-Type: application/json\r\n\r\n${json}\r\n--${boundary}--`
@@ -153,11 +205,11 @@ export async function upload(name: string, body: unknown, id?: string): Promise<
   return ((await res.json()) as { id: string }).id
 }
 
-export async function copyFile(id: string, name: string): Promise<void> {
+export async function copyFile(id: string, name: string, folderId: string): Promise<void> {
   await call(`${API}/files/${id}/copy?fields=id`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name, parents: ['appDataFolder'] }),
+    body: JSON.stringify({ name, parents: [folderId] }),
   })
 }
 

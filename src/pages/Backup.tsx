@@ -59,9 +59,9 @@ export default function Backup() {
         ) : !connected ? (
           <>
             <p className="text-sm text-muted-foreground">
-              Keeps one encrypted copy of your vault in your Google Drive. It backs up every change and lets your phone
-              and laptop open the same vault. The app can only see its own hidden folder, and Google sees only scrambled
-              data.
+              Keeps one encrypted copy of your vault in a <strong>HomeVault</strong> folder in your Google Drive. It backs up
+              every change and lets your phone and laptop open the same vault. The app can only see files it created
+              itself, and Google sees only scrambled data.
             </p>
             <p className="text-sm text-muted-foreground">You will be asked to unlock again after signing in to Google.</p>
             <Button size="lg" onClick={() => startSignIn('connect')}>

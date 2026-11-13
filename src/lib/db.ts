@@ -28,6 +28,8 @@ export interface SyncMeta {
   id: 'sync'
   connected: boolean
   fileId?: string
+  /** 'folder' once the vault lives in the visible HomeVault folder */
+  store?: 'folder'
   lastSync?: number
   lastSnapshot?: string // YYYY-MM-DD
   /** Drive holds a different vault than this device */

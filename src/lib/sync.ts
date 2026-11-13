@@ -8,6 +8,9 @@ import {
   deleteFile,
   download,
   findFile,
+  findLegacyFile,
+  folders,
+  forgetFolders,
   forgetToken,
   getToken,
   listFiles,
@@ -106,33 +109,45 @@ async function doSync() {
   try {
     const local = await getHeader()
     if (!local) return
-    let fileId = meta.fileId
+    const f = await folders()
+    // Ignore a file id from before the vault moved into the HomeVault folder.
+    let fileId = meta.store === 'folder' ? meta.fileId : undefined
     let remote: VaultFile | null = null
-    if (!fileId) fileId = (await findFile(VAULT_FILE))?.id
+    let legacyId: string | undefined
+    if (!fileId) fileId = (await findFile(VAULT_FILE, f.root))?.id
+    if (!fileId) {
+      // First sync after the move: bring the copy from the hidden app folder across.
+      const legacy = await findLegacyFile(VAULT_FILE)
+      if (legacy) {
+        legacyId = legacy.id
+        remote = await download<VaultFile>(legacy.id)
+      }
+    }
     if (fileId) {
       try {
         remote = await download<VaultFile>(fileId)
       } catch (e) {
         if (e instanceof DriveAuthError) throw e
         // File gone (deleted in Drive): look again by name, else create fresh.
-        fileId = (await findFile(VAULT_FILE))?.id
+        fileId = (await findFile(VAULT_FILE, f.root))?.id
         remote = fileId ? await download<VaultFile>(fileId) : null
       }
     }
 
     if (remote && isVaultFile(remote)) {
       if (remote.header.vaultId !== local.vaultId) {
-        await saveMeta({ mismatch: true, fileId })
+        await saveMeta({ mismatch: true, fileId, store: legacyId ? undefined : 'folder' })
         return set({ status: 'mismatch' })
       }
       await mergeRemote(remote, meta.lastSync ?? 0)
     }
 
     const merged = await buildVaultFile()
-    fileId = await upload(VAULT_FILE, merged, fileId)
+    fileId = await upload(VAULT_FILE, merged, fileId, f.root)
     const now = Date.now()
-    await saveMeta({ fileId, lastSync: now })
-    await maybeSnapshot(fileId)
+    await saveMeta({ fileId, store: 'folder', lastSync: now })
+    if (legacyId) await deleteFile(legacyId).catch(() => {})
+    await maybeSnapshot(fileId, f.snaps)
     set({ status: 'idle', lastSync: now })
   } catch (e) {
     if (e instanceof DriveAuthError) set({ status: 'signin' })
@@ -170,11 +185,13 @@ async function mergeRemote(remote: VaultFile, lastSync: number) {
 
 const todayStr = () => new Date().toISOString().slice(0, 10)
 
-async function maybeSnapshot(fileId: string) {
+async function maybeSnapshot(fileId: string, snapsFolder: string) {
   const meta = await getSyncMeta()
   const today = todayStr()
   if (meta.lastSnapshot === today) return
-  await copyFile(fileId, `${SNAPSHOT_PREFIX}${today}.json`)
+  const name = `${SNAPSHOT_PREFIX}${today}.json`
+  // One per day across all devices: the first sync of the day makes it.
+  if (!(await findFile(name, snapsFolder))) await copyFile(fileId, name, snapsFolder)
   await saveMeta({ lastSnapshot: today })
   await pruneSnapshots()
 }
@@ -207,7 +224,7 @@ export interface Snapshot {
 }
 
 export async function listSnapshots(): Promise<Snapshot[]> {
-  const files = await listFiles(SNAPSHOT_PREFIX)
+  const files = await listFiles(SNAPSHOT_PREFIX, (await folders()).snaps)
   return files
     .map((file) => ({ file, date: file.name.slice(SNAPSHOT_PREFIX.length, SNAPSHOT_PREFIX.length + 10) }))
     .filter((s) => /^\d{4}-\d{2}-\d{2}$/.test(s.date))
@@ -243,18 +260,27 @@ export async function markConnected() {
 
 export async function disconnect() {
   forgetToken()
+  forgetFolders()
   await db.meta.put({ id: 'sync', connected: false })
   set({ status: 'off', lastSync: undefined })
 }
 
 /** First run on a new device: download the vault from Drive. Returns false if Drive has none. */
 export async function openFromDrive(): Promise<boolean> {
-  const file = await findFile(VAULT_FILE)
+  const f = await folders()
+  const inFolder = await findFile(VAULT_FILE, f.root)
+  const file = inFolder ?? (await findLegacyFile(VAULT_FILE))
   if (!file) return false
   const remote = await download<VaultFile>(file.id)
   if (!isVaultFile(remote)) throw new Error('The file in Drive is not a HomeVault vault')
   await replaceLocalVault(remote.header, remote.records)
-  await db.meta.put({ id: 'sync', connected: true, fileId: file.id, lastSync: Date.now(), lastSnapshot: todayStr() })
+  await db.meta.put({
+    id: 'sync',
+    connected: true,
+    fileId: inFolder?.id,
+    store: inFolder ? 'folder' : undefined,
+    lastSync: Date.now(),
+  })
   await loadSyncState()
   return true
 }
@@ -268,11 +294,18 @@ export async function adoptDriveVault() {
 /** Drive holds another vault: overwrite it with this device's vault (Drive's copy is replaced). */
 export async function overwriteDriveVault() {
   const meta = await getSyncMeta()
-  const fileId = meta.fileId ?? (await findFile(VAULT_FILE))?.id
+  const f = await folders()
+  let fileId = (meta.store === 'folder' ? meta.fileId : undefined) ?? (await findFile(VAULT_FILE, f.root))?.id
+  const legacy = fileId ? null : await findLegacyFile(VAULT_FILE)
   // Keep a dated copy of what was in Drive, just in case.
-  if (fileId) await copyFile(fileId, `homevault-replaced-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.json`)
-  const id = await upload(VAULT_FILE, await buildVaultFile(), fileId)
-  await saveMeta({ fileId: id, mismatch: false, lastSync: Date.now(), lastSnapshot: undefined })
+  const stamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-')
+  if (fileId) await copyFile(fileId, `homevault-replaced-${stamp}.json`, f.snaps)
+  if (legacy) {
+    await upload(`homevault-replaced-${stamp}.json`, await download(legacy.id), undefined, f.snaps)
+    await deleteFile(legacy.id).catch(() => {})
+  }
+  fileId = await upload(VAULT_FILE, await buildVaultFile(), fileId, f.root)
+  await saveMeta({ fileId, store: 'folder', mismatch: false, lastSync: Date.now(), lastSnapshot: undefined })
   await loadSyncState()
   await syncNow()
 }
