@@ -154,6 +154,7 @@ export default function Settings() {
           value={`${settings.members.length} ${settings.members.length === 1 ? 'person' : 'people'}`}
           to="/settings/members"
         />
+        <Row label="Import from Excel or CSV" value="Laptop" to="/import" />
         <Row label="Health check" value={healthCount ? `${healthCount} to look at` : 'All good'} to="/health" />
         <Row label="Bin" value={binCount ? `${binCount} ${binCount === 1 ? 'item' : 'items'}` : 'Empty'} to="/settings/bin" />
       </Group>

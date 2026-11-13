@@ -1,4 +1,4 @@
-import { Bell, CalendarClock, Home, Lock, Plus, Printer, Search, Settings, ShieldCheck } from 'lucide-react'
+import { Bell, CalendarClock, FileUp, Home, Lock, Plus, Printer, Search, Settings, ShieldCheck } from 'lucide-react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { CATEGORY_ICONS } from '@/components/CategoryIcon'
 import { CATEGORY_BY_ID, CATEGORY_GROUPS } from '@/lib/categories'
@@ -82,6 +82,17 @@ export function AppShell() {
           }
         >
           <Printer className="size-[18px]" /> Print
+        </NavLink>
+        <NavLink
+          to="/import"
+          className={({ isActive }) =>
+            cn(
+              'flex h-10 items-center gap-3 rounded-lg px-3 text-[15px] font-medium',
+              isActive ? 'bg-accent text-accent-foreground' : 'hover:bg-muted',
+            )
+          }
+        >
+          <FileUp className="size-[18px]" /> Import
         </NavLink>
         <NavLink
           to="/health"

@@ -16,6 +16,8 @@ import Person from '@/pages/Person'
 import Print from '@/pages/Print'
 import FamilySheet from '@/pages/FamilySheet'
 import PrintItemPage from '@/pages/PrintItemPage'
+import { lazy, Suspense } from 'react'
+const Import = lazy(() => import('@/pages/Import'))
 import Notifications, { NotificationDetail } from '@/pages/Notifications'
 import { addNotification, refreshNotifications } from '@/lib/notifications'
 import AddChoose from '@/pages/AddChoose'
@@ -82,6 +84,14 @@ function Vault({ notice }: { notice?: string }) {
           <Route path="print" element={<Print />} />
           <Route path="print/family" element={<FamilySheet />} />
           <Route path="print/item/:id" element={<PrintItemPage />} />
+          <Route
+            path="import"
+            element={
+              <Suspense fallback={null}>
+                <Import />
+              </Suspense>
+            }
+          />
           <Route path="notifications" element={<Notifications />} />
           <Route path="notifications/:id" element={<NotificationDetail />} />
           <Route path="add" element={<AddChoose />} />

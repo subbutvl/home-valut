@@ -27,6 +27,8 @@ export interface Item {
   done?: Record<string, string>
   /** Days before a date to start reminding; empty = the default for its kind */
   leadDays?: number
+  /** Set on items added by an Excel/CSV import, so the import can be undone */
+  importId?: string
   /** Bank lockers: what is inside */
   lockerContents?: LockerEntry[]
   createdAt: number

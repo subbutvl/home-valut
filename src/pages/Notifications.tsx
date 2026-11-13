@@ -1,6 +1,7 @@
 import { Bell, CalendarClock, CloudAlert, RefreshCw, ShieldAlert, TriangleAlert } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
+import { toast } from 'sonner'
 import { Page } from '@/components/AppShell'
 import { Card, EmptyState, PageHeader } from '@/components/common'
 import { ago } from '@/components/SyncStatus'
@@ -176,6 +177,22 @@ export function NotificationDetail() {
               Snooze 1 week
             </Button>
           </div>
+        )}
+        {n.key.startsWith('import:') && (
+          <Button
+            size="lg"
+            variant="outline"
+            className="text-destructive"
+            onClick={async () => {
+              if (!window.confirm('Undo this import? The items it added are removed.')) return
+              const { undoImport } = await import('@/lib/importer')
+              const count = await undoImport(n.key.slice(7))
+              toast.success(`Import undone. ${count} items removed.`)
+              navigate('/notifications')
+            }}
+          >
+            Undo import
+          </Button>
         )}
         {n.type === 'check' && (
           <Button size="lg" onClick={() => navigate('/health')}>
