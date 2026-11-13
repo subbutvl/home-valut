@@ -8,12 +8,65 @@ import { Input } from '@/components/ui/input'
 import type { Member } from '@/lib/types'
 import { newId, saveItem, updateSettings, useVault } from '@/lib/vault'
 
-const RELATIONS = ['Self', 'Spouse', 'Father', 'Mother', 'Son', 'Daughter', 'Brother', 'Sister', 'Other']
+const RELATION_GROUPS: [string, string[]][] = [
+  ['Close family', ['Self', 'Spouse', 'Father', 'Mother', 'Son', 'Daughter', 'Brother', 'Sister']],
+  ['In-laws', ['Father-in-law', 'Mother-in-law', 'Brother-in-law', 'Sister-in-law', 'Son-in-law', 'Daughter-in-law']],
+  ['Extended family', ['Grandfather', 'Grandmother', 'Grandson', 'Granddaughter', 'Nephew', 'Niece', 'Uncle', 'Aunt', 'Cousin']],
+]
+const RELATIONS = RELATION_GROUPS.flatMap(([, r]) => r)
+const OTHER = '__other__'
+
+/** Pick a relation, or choose "Other" and type your own. */
+function RelationPicker({ value, onChange, className }: { value: string; onChange: (v: string) => void; className?: string }) {
+  const [typing, setTyping] = useState(!!value && !RELATIONS.includes(value))
+  const [draft, setDraft] = useState(value)
+  if (typing)
+    return (
+      <Input
+        aria-label="Relationship"
+        autoFocus={!value}
+        placeholder="e.g. Godson"
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={() => {
+          const v = draft.trim()
+          if (!v) setTyping(false)
+          if (v !== value) onChange(v)
+        }}
+        onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLInputElement).blur()}
+        className={className}
+      />
+    )
+  return (
+    <select
+      aria-label="Relationship"
+      value={value}
+      onChange={(e) => {
+        if (e.target.value === OTHER) {
+          setDraft('')
+          setTyping(true)
+        } else onChange(e.target.value)
+      }}
+      className={`rounded-xl border border-input bg-card px-2 ${className ?? ''}`}
+    >
+      <option value="">Relation</option>
+      {RELATION_GROUPS.map(([label, rels]) => (
+        <optgroup key={label} label={label}>
+          {rels.map((r) => (
+            <option key={r}>{r}</option>
+          ))}
+        </optgroup>
+      ))}
+      <option value={OTHER}>Other (type your own)…</option>
+    </select>
+  )
+}
 
 export default function Members() {
   const { settings, items } = useVault()
   const [name, setName] = useState('')
   const [rel, setRel] = useState('')
+  const [addKey, setAddKey] = useState(0)
 
   const usage = (n: string) => items.filter((i) => !i.deletedAt && (i.belongsTo.includes(n) || i.nominees.some((x) => x.name === n))).length
 
@@ -24,6 +77,7 @@ export default function Members() {
     await updateSettings({ members: [...settings.members, { id: newId(), name: n, relationship: rel }] })
     setName('')
     setRel('')
+    setAddKey((k) => k + 1)
   }
 
   /** Renaming updates "Belongs to" and nominees on every item. */
@@ -52,25 +106,19 @@ export default function Members() {
       <PageHeader title="Family members" back="/settings" subtitle="Used for “Belongs to” and nominees. Family don't get a login." />
       <Card className="overflow-hidden">
         {settings.members.map((m) => (
-          <div key={m.id} className="flex items-center gap-2 border-b border-border/60 px-3 py-2.5 last:border-b-0">
+          <div key={m.id} className="flex flex-wrap items-center gap-2 border-b border-border/60 px-3 py-3 last:border-b-0">
             <Input
               aria-label="Name"
               defaultValue={m.name}
               onBlur={(e) => rename(m, e.target.value)}
-              className="h-11 flex-1"
+              className="h-11 min-w-0 basis-full sm:flex-1 sm:basis-0"
             />
-            <select
-              aria-label="Relationship"
+            <RelationPicker
               value={m.relationship}
-              onChange={(e) => updateSettings({ members: settings.members.map((x) => (x.id === m.id ? { ...x, relationship: e.target.value } : x)) })}
-              className="h-11 w-28 rounded-xl border border-input bg-card px-2"
-            >
-              <option value="">Relation</option>
-              {RELATIONS.map((r) => (
-                <option key={r}>{r}</option>
-              ))}
-            </select>
-            <span className="w-14 text-center text-xs text-muted-foreground">{usage(m.name)} items</span>
+              onChange={(v) => updateSettings({ members: settings.members.map((x) => (x.id === m.id ? { ...x, relationship: v } : x)) })}
+              className="h-11 min-w-0 flex-1 sm:w-44 sm:flex-none"
+            />
+            <span className="w-16 text-center text-xs text-muted-foreground">{usage(m.name)} {usage(m.name) === 1 ? 'item' : 'items'}</span>
             <button
               type="button"
               aria-label={`Remove ${m.name}`}
@@ -84,14 +132,9 @@ export default function Members() {
       </Card>
       <Card className="flex flex-col gap-2.5 p-4">
         <span className="text-[15px] font-semibold">Add a person</span>
-        <div className="flex gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row">
           <Input aria-label="New person's name" placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && add()} />
-          <select aria-label="Relationship" value={rel} onChange={(e) => setRel(e.target.value)} className="h-12 w-32 shrink-0 rounded-xl border border-input bg-card px-2">
-            <option value="">Relation</option>
-            {RELATIONS.map((r) => (
-              <option key={r}>{r}</option>
-            ))}
-          </select>
+          <RelationPicker key={addKey} value={rel} onChange={setRel} className="h-12 w-full sm:w-44 sm:shrink-0" />
         </div>
         <Button onClick={add} disabled={!name.trim()}>
           Add
