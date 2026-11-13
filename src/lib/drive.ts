@@ -40,7 +40,9 @@ export function startSignIn(purpose: SignInPurpose, silent = false) {
     include_granted_scopes: 'true',
     state,
   })
-  if (silent) p.set('prompt', 'none')
+  // Interactive sign-in always shows the permission screen, so a permission
+  // that was unticked earlier can be ticked again.
+  p.set('prompt', silent ? 'none' : 'consent')
   location.assign(`https://accounts.google.com/o/oauth2/v2/auth?${p}`)
 }
 
@@ -69,6 +71,12 @@ export function handleRedirect(): RedirectResult | null {
   if (!token) return { purpose: pending.purpose, ok: false, error: p.get('error') ?? 'unknown' }
   const expiresIn = Number(p.get('expires_in') ?? 3600)
   localStorage.setItem(TOKEN_KEY, JSON.stringify({ token, expiresAt: Date.now() + (expiresIn - 120) * 1000 }))
+  // Google lets people untick permissions on the consent screen. Without drive.file nothing can be saved.
+  const granted = p.get('scope') ?? ''
+  if (granted && !granted.includes('auth/drive.file')) {
+    localStorage.removeItem(TOKEN_KEY)
+    return { purpose: pending.purpose, ok: false, error: 'missing_drive_permission' }
+  }
   return { purpose: pending.purpose, ok: true }
 }
 
@@ -89,7 +97,42 @@ export function forgetToken() {
     fetch(`https://oauth2.googleapis.com/revoke?token=${encodeURIComponent(token)}`, { method: 'POST' }).catch(() => {})
 }
 
-export class DriveAuthError extends Error {}
+export class DriveAuthError extends Error {
+  /** True when Google needs the user to tick the Drive permission again. */
+  needsConsent: boolean
+  constructor(message: string, needsConsent = false) {
+    super(message)
+    this.needsConsent = needsConsent
+  }
+}
+
+/** A Drive request Google refused, with Google's reason in plain words. */
+export class DriveError extends Error {}
+
+async function explain(res: Response): Promise<Error> {
+  let reason = ''
+  let message = ''
+  try {
+    const body = (await res.json()) as { error?: { message?: string; errors?: { reason?: string }[]; details?: { reason?: string }[] } }
+    reason = body.error?.errors?.[0]?.reason ?? body.error?.details?.[0]?.reason ?? ''
+    message = body.error?.message ?? ''
+  } catch {
+    /* not JSON */
+  }
+  console.warn('Google Drive', res.status, reason, message)
+  if (reason === 'accessNotConfigured' || reason === 'SERVICE_DISABLED' || /has not been used|is disabled/i.test(message))
+    return new DriveError(
+      'The Google Drive API is switched off for this app. In Google Cloud, open the HomeVault project, then APIs & Services → Library → Google Drive API → Enable.',
+    )
+  if (reason === 'insufficientPermissions' || reason === 'ACCESS_TOKEN_SCOPE_INSUFFICIENT' || /insufficient.*scope/i.test(message)) {
+    localStorage.removeItem(TOKEN_KEY)
+    return new DriveAuthError('Google Drive permission is missing. Sign in again and allow access to Drive files.', true)
+  }
+  if (reason === 'storageQuotaExceeded') return new DriveError('Your Google Drive is full.')
+  if (res.status === 429 || reason === 'userRateLimitExceeded' || reason === 'rateLimitExceeded')
+    return new DriveError('Google Drive is busy. Try again in a minute.')
+  return new DriveError(`Google Drive error ${res.status}${message ? `: ${message}` : ''}`)
+}
 
 async function call(url: string, init: RequestInit = {}): Promise<Response> {
   const token = getToken()
@@ -99,7 +142,7 @@ async function call(url: string, init: RequestInit = {}): Promise<Response> {
     localStorage.removeItem(TOKEN_KEY)
     throw new DriveAuthError('Google sign-in expired')
   }
-  if (!res.ok) throw new Error(`Google Drive error ${res.status}`)
+  if (!res.ok) throw await explain(res)
   return res
 }
 

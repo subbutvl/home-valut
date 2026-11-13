@@ -95,8 +95,15 @@ async function start(redirect: RedirectResult | null, setNotice: (s: string) => 
     void addNotification({ key: `sync:${Date.now()}`, type: 'sync', title: msg })
   })
   if (redirect && !redirect.ok) {
-    if (redirect.purpose === 'refresh') sessionStorage.setItem(NO_AUTO, '1')
-    else setNotice('Google sign-in did not finish. Try again.')
+    const missing = redirect.error === 'missing_drive_permission'
+    const msg = missing
+      ? 'Google Drive access was not allowed. Sign in again and tick “See, edit, create and delete only the specific Google Drive files you use with this app”.'
+      : 'Google sign-in did not finish. Try again.'
+    if (redirect.purpose === 'refresh') {
+      sessionStorage.setItem(NO_AUTO, '1')
+      if (missing) toast.error(msg, { duration: 15000 })
+    } else if (redirect.purpose === 'open') setNotice(msg)
+    else toast.error(msg, { duration: 15000 })
     return
   }
   if (redirect?.purpose === 'open') {

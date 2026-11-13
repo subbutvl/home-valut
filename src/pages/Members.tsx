@@ -1,10 +1,12 @@
-import { Trash2 } from 'lucide-react'
+import { ChevronRight, Plus } from 'lucide-react'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { Page } from '@/components/AppShell'
 import { Card, PageHeader } from '@/components/common'
 import { Button } from '@/components/ui/button'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import type { Member } from '@/lib/types'
 import { newId, saveItem, updateSettings, useVault } from '@/lib/vault'
 
@@ -47,7 +49,7 @@ function RelationPicker({ value, onChange, className }: { value: string; onChang
           setTyping(true)
         } else onChange(e.target.value)
       }}
-      className={`rounded-xl border border-input bg-card px-2 ${className ?? ''}`}
+      className={`rounded-xl border border-input bg-card px-3 text-base ${className ?? ''}`}
     >
       <option value="">Relation</option>
       {RELATION_GROUPS.map(([label, rels]) => (
@@ -64,82 +66,133 @@ function RelationPicker({ value, onChange, className }: { value: string; onChang
 
 export default function Members() {
   const { settings, items } = useVault()
-  const [name, setName] = useState('')
-  const [rel, setRel] = useState('')
-  const [addKey, setAddKey] = useState(0)
+  // null = closed, 'new' = adding, a member = editing
+  const [editing, setEditing] = useState<Member | 'new' | null>(null)
 
-  const usage = (n: string) => items.filter((i) => !i.deletedAt && (i.belongsTo.includes(n) || i.nominees.some((x) => x.name === n))).length
-
-  const add = async () => {
-    const n = name.trim()
-    if (!n) return
-    if (settings.members.some((m) => m.name.toLowerCase() === n.toLowerCase())) return toast.error('That name is already there')
-    await updateSettings({ members: [...settings.members, { id: newId(), name: n, relationship: rel }] })
-    setName('')
-    setRel('')
-    setAddKey((k) => k + 1)
-  }
-
-  /** Renaming updates "Belongs to" and nominees on every item. */
-  const rename = async (m: Member, next: string) => {
-    const n = next.trim()
-    if (!n || n === m.name) return
-    if (settings.members.some((x) => x.id !== m.id && x.name.toLowerCase() === n.toLowerCase())) return toast.error('That name is already there')
-    for (const i of items)
-      if (i.belongsTo.includes(m.name) || i.nominees.some((x) => x.name === m.name))
-        await saveItem({
-          ...i,
-          belongsTo: i.belongsTo.map((x) => (x === m.name ? n : x)),
-          nominees: i.nominees.map((x) => (x.name === m.name ? { ...x, name: n } : x)),
-        })
-    await updateSettings({ members: settings.members.map((x) => (x.id === m.id ? { ...x, name: n } : x)) })
-  }
-
-  const remove = async (m: Member) => {
-    const used = usage(m.name)
-    if (used) return toast.error(`${m.name} is on ${used} ${used === 1 ? 'item' : 'items'}. Change those first.`)
-    await updateSettings({ members: settings.members.filter((x) => x.id !== m.id) })
-  }
+  const usage = (n: string) =>
+    items.filter((i) => !i.deletedAt && (i.belongsTo.includes(n) || i.nominees.some((x) => x.name === n))).length
 
   return (
     <Page>
-      <PageHeader title="Family members" back="/settings" subtitle="Used for “Belongs to” and nominees. Family don't get a login." />
+      <PageHeader
+        title="Family members"
+        back="/settings"
+        subtitle="Used for “Belongs to” and nominees. Family don't get a login."
+      />
       <Card className="overflow-hidden">
-        {settings.members.map((m) => (
-          <div key={m.id} className="flex flex-wrap items-center gap-2 border-b border-border/60 px-3 py-3 last:border-b-0">
-            <Input
-              aria-label="Name"
-              defaultValue={m.name}
-              onBlur={(e) => rename(m, e.target.value)}
-              className="h-11 min-w-0 basis-full sm:flex-1 sm:basis-0"
-            />
-            <RelationPicker
-              value={m.relationship}
-              onChange={(v) => updateSettings({ members: settings.members.map((x) => (x.id === m.id ? { ...x, relationship: v } : x)) })}
-              className="h-11 min-w-0 flex-1 sm:w-44 sm:flex-none"
-            />
-            <span className="w-16 text-center text-xs text-muted-foreground">{usage(m.name)} {usage(m.name) === 1 ? 'item' : 'items'}</span>
+        {settings.members.map((m) => {
+          const n = usage(m.name)
+          return (
             <button
+              key={m.id}
               type="button"
-              aria-label={`Remove ${m.name}`}
-              onClick={() => remove(m)}
-              className="flex size-10 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted"
+              onClick={() => setEditing(m)}
+              className="flex w-full items-center gap-3 border-b border-border/60 px-4 py-3 text-left last:border-b-0 hover:bg-muted/50"
             >
-              <Trash2 className="size-[18px]" />
+              <span
+                aria-hidden="true"
+                className="flex size-10 shrink-0 items-center justify-center rounded-full bg-accent text-[15px] font-bold text-accent-foreground"
+              >
+                {m.name.slice(0, 1).toUpperCase()}
+              </span>
+              <span className="flex min-w-0 flex-1 flex-col">
+                <span className="truncate text-[15px] font-semibold">{m.name}</span>
+                <span className="truncate text-[13px] text-muted-foreground">{m.relationship || 'No relation set'}</span>
+              </span>
+              <span className="shrink-0 text-xs text-muted-foreground">
+                {n} {n === 1 ? 'item' : 'items'}
+              </span>
+              <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
             </button>
-          </div>
-        ))}
+          )
+        })}
       </Card>
-      <Card className="flex flex-col gap-2.5 p-4">
-        <span className="text-[15px] font-semibold">Add a person</span>
-        <div className="flex flex-col gap-2 sm:flex-row">
-          <Input aria-label="New person's name" placeholder="Name" value={name} onChange={(e) => setName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && add()} />
-          <RelationPicker key={addKey} value={rel} onChange={setRel} className="h-12 w-full sm:w-44 sm:shrink-0" />
-        </div>
-        <Button onClick={add} disabled={!name.trim()}>
-          Add
-        </Button>
-      </Card>
+      <Button size="lg" variant="outline" onClick={() => setEditing('new')}>
+        <Plus /> Add person
+      </Button>
+      <MemberDialog
+        key={editing === null ? 'closed' : editing === 'new' ? 'new' : editing.id}
+        member={editing}
+        usage={editing && editing !== 'new' ? usage(editing.name) : 0}
+        onClose={() => setEditing(null)}
+      />
     </Page>
+  )
+}
+
+function MemberDialog({ member, usage, onClose }: { member: Member | 'new' | null; usage: number; onClose: () => void }) {
+  const { settings, items } = useVault()
+  const isNew = member === 'new'
+  const current = member && member !== 'new' ? member : null
+  const [name, setName] = useState(current?.name ?? '')
+  const [rel, setRel] = useState(current?.relationship ?? '')
+  const [busy, setBusy] = useState(false)
+
+  const taken = (n: string) => settings.members.some((x) => x.id !== current?.id && x.name.toLowerCase() === n.toLowerCase())
+
+  const save = async () => {
+    const n = name.trim()
+    if (!n) return
+    if (taken(n)) return toast.error('That name is already there')
+    setBusy(true)
+    if (isNew) {
+      await updateSettings({ members: [...settings.members, { id: newId(), name: n, relationship: rel }] })
+    } else if (current) {
+      // Renaming updates "Belongs to" and nominees on every item.
+      if (n !== current.name)
+        for (const i of items)
+          if (i.belongsTo.includes(current.name) || i.nominees.some((x) => x.name === current.name))
+            await saveItem({
+              ...i,
+              belongsTo: i.belongsTo.map((x) => (x === current.name ? n : x)),
+              nominees: i.nominees.map((x) => (x.name === current.name ? { ...x, name: n } : x)),
+            })
+      await updateSettings({
+        members: settings.members.map((x) => (x.id === current.id ? { ...x, name: n, relationship: rel } : x)),
+      })
+    }
+    setBusy(false)
+    onClose()
+  }
+
+  const remove = async () => {
+    if (!current) return
+    if (usage) return toast.error(`${current.name} is on ${usage} ${usage === 1 ? 'item' : 'items'}. Change those first.`)
+    if (!confirm(`Remove ${current.name} from family members?`)) return
+    await updateSettings({ members: settings.members.filter((x) => x.id !== current.id) })
+    onClose()
+  }
+
+  return (
+    <Dialog open={member !== null} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{isNew ? 'Add person' : 'Edit person'}</DialogTitle>
+          {!isNew && usage > 0 && (
+            <DialogDescription>
+              On {usage} {usage === 1 ? 'item' : 'items'}. A new name is updated on those items too.
+            </DialogDescription>
+          )}
+        </DialogHeader>
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="mname" className="text-sm font-semibold">
+            Name
+          </Label>
+          <Input id="mname" value={name} autoFocus={isNew} onChange={(e) => setName(e.target.value)} placeholder="e.g. Ravi" />
+        </div>
+        <div className="flex flex-col gap-2">
+          <span className="text-sm font-semibold">Relation</span>
+          <RelationPicker value={rel} onChange={setRel} className="h-12 w-full" />
+        </div>
+        <Button size="lg" disabled={!name.trim() || busy} onClick={save}>
+          {isNew ? 'Add' : 'Save'}
+        </Button>
+        {!isNew && current?.id !== 'self' && (
+          <Button variant="ghost" className="text-destructive" onClick={remove}>
+            Remove {current?.name}
+          </Button>
+        )}
+      </DialogContent>
+    </Dialog>
   )
 }

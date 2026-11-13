@@ -150,7 +150,7 @@ async function doSync() {
     await maybeSnapshot(fileId, f.snaps)
     set({ status: 'idle', lastSync: now })
   } catch (e) {
-    if (e instanceof DriveAuthError) set({ status: 'signin' })
+    if (e instanceof DriveAuthError) set({ status: 'signin', error: e.message })
     else set({ status: navigator.onLine ? 'error' : 'offline', error: (e as Error).message })
   }
 }

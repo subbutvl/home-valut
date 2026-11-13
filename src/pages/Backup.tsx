@@ -68,6 +68,31 @@ export default function Backup() {
               Connect Google Drive
             </Button>
           </>
+        ) : (sync.status === 'error' || sync.status === 'signin') && sync.error ? (
+          <>
+            <p role="alert" className="rounded-xl bg-destructive/10 px-3.5 py-3 text-sm leading-snug text-destructive">
+              {sync.error}
+            </p>
+            <div className="grid grid-cols-2 gap-2.5">
+              <Button
+                variant="outline"
+                disabled={busy}
+                onClick={() => (sync.status === 'signin' ? startSignIn('refresh') : run(syncNow))}
+              >
+                {sync.status === 'signin' ? 'Sign in to Google' : 'Try again'}
+              </Button>
+              <Button
+                variant="outline"
+                className="text-destructive"
+                onClick={() => {
+                  if (confirm('Disconnect Google Drive on this device?\n\nNothing is deleted from Drive or from this device.'))
+                    void disconnect()
+                }}
+              >
+                Disconnect
+              </Button>
+            </div>
+          </>
         ) : sync.status === 'mismatch' ? (
           <>
             <p className="rounded-xl bg-warn-bg px-3.5 py-3 text-sm leading-snug text-warn-fg">
