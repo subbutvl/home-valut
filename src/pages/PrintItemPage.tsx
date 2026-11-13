@@ -32,8 +32,9 @@ export default function PrintItemPage() {
         <p className="pd-meta">
           HomeVault · {getCategory(item.category).name} · printed on {printedOn()}
         </p>
-        <h2 style={{ marginTop: '6pt' }}>{item.name}</h2>
-        <PrintItem item={{ ...item, name: '' }} mode={mode} />
+        <div style={{ marginTop: '8pt' }}>
+          <PrintItem item={item} mode={mode} />
+        </div>
       </article>
     </Page>
   )

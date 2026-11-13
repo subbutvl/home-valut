@@ -4,41 +4,66 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { getCategory } from '@/lib/categories'
-import { itemLines, itemMeta, pageCss, type SecretMode } from '@/lib/printing'
+import { itemSections, pageCss, type SecretMode } from '@/lib/printing'
 import type { Item } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { verifyPassword } from '@/lib/vault'
 
-/** One item on paper: name, who it belongs to, and its fields in a grid. */
-export function PrintItem({ item, mode, notes = true, showCategory }: { item: Item; mode: SecretMode; notes?: boolean; showCategory?: boolean }) {
-  const lines = itemLines(item, mode, { notes })
-  const meta = [showCategory ? getCategory(item.category).name : '', itemMeta(item)].filter(Boolean).join(' · ')
+/** One item on paper: a header with its name, then its details in labelled groups. */
+export function PrintItem({
+  item,
+  mode,
+  notes = true,
+  showCategory,
+  only,
+}: {
+  item: Item
+  mode: SecretMode
+  notes?: boolean
+  showCategory?: boolean
+  only?: string[]
+}) {
+  const sections = itemSections(item, mode, { notes, only })
+  const meta = [showCategory ? getCategory(item.category).name : '', item.subcategory].filter(Boolean).join(' · ')
+  const contents = item.lockerContents?.filter((e) => e.item.trim()) ?? []
   return (
     <div className="pd-item">
-      <div className="pd-name">{item.name}</div>
-      {meta && <div className="pd-meta">{meta}</div>}
-      {lines.length > 0 && (
-        <dl className="pd-grid">
-          {lines.map((l) => (
-            <div key={l.label}>
-              <dt>{l.label}</dt>
-              <dd style={{ whiteSpace: 'pre-wrap' }}>{l.value}</dd>
-            </div>
+      <div className="pd-head">
+        <div className="pd-name">{item.name}</div>
+        {meta && <div className="pd-meta">{meta}</div>}
+      </div>
+      {(sections.length > 0 || contents.length > 0) && (
+        <div className="pd-sections">
+          {sections.map((s) => (
+            <section key={s.title} className={cn('pd-section', s.title === 'Notes' && 'wide')}>
+              <h3>{s.title}</h3>
+              <table className="pd-rows">
+                <tbody>
+                  {s.lines.map((l, i) => (
+                    <tr key={i}>
+                      {l.label && <th scope="row">{l.label}</th>}
+                      <td colSpan={l.label ? 1 : 2}>{l.value}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </section>
           ))}
-        </dl>
-      )}
-      {item.lockerContents && item.lockerContents.length > 0 && (
-        <div style={{ marginTop: '3pt' }}>
-          <dt className="pd-meta">Contents</dt>
-          <ul style={{ margin: 0, paddingLeft: '14pt', listStyle: 'disc' }}>
-            {item.lockerContents.map((e) => (
-              <li key={e.id}>
-                {e.item}
-                {e.description ? ` (${e.description})` : ''}
-                {e.owner ? ` · ${e.owner}` : ''}
-              </li>
-            ))}
-          </ul>
+          {contents.length > 0 && (
+            <section className="pd-section wide">
+              <h3>Contents of the locker</h3>
+              <table className="pd-rows">
+                <tbody>
+                  {contents.map((e) => (
+                    <tr key={e.id}>
+                      <th scope="row">{e.item}</th>
+                      <td>{[e.description, e.owner].filter(Boolean).join(' · ')}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </section>
+          )}
         </div>
       )}
     </div>

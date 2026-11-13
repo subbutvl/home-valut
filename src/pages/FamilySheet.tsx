@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { CATEGORY_BY_ID } from '@/lib/categories'
-import { itemLines, printedOn } from '@/lib/printing'
+import { printedOn } from '@/lib/printing'
 import type { FamilySheetConfig, Item } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { updateSettings, useVault } from '@/lib/vault'
@@ -128,7 +128,7 @@ export default function FamilySheet() {
                 cfg.showSecrets ? (
                   <PrintItem key={i.id} item={i} mode={mode} notes={false} />
                 ) : (
-                  <SheetItem key={i.id} item={i} fields={only(i)} />
+                  <PrintItem key={i.id} item={i} mode="omit" notes={false} only={[...(only(i) ?? []), 'belongsTo']} />
                 ),
               )}
             </section>
@@ -138,7 +138,7 @@ export default function FamilySheet() {
             <section>
               <h2>Key contacts</h2>
               {contacts.map((c) => (
-                <SheetItem key={c.id} item={c} fields={['role', 'phone', 'phone2', 'organisation', 'email']} />
+                <PrintItem key={c.id} item={c} mode="omit" notes={false} only={['role', 'phone', 'phone2', 'organisation', 'email']} />
               ))}
             </section>
           )}
@@ -148,18 +148,26 @@ export default function FamilySheet() {
               <h2>Emergency medical information</h2>
               {medical.map((m) => (
                 <div key={m.id} className="pd-item">
-                  <div className="pd-name">
-                    {m.name}
-                    {m.relationship ? ` (${m.relationship})` : ''}
+                  <div className="pd-head">
+                    <div className="pd-name">
+                      {m.name}
+                      {m.relationship ? ` (${m.relationship})` : ''}
+                    </div>
                   </div>
-                  <dl className="pd-grid">
-                    {MEDICAL_FIELDS.filter((f) => m.medical?.[f.key]).map((f) => (
-                      <div key={f.key}>
-                        <dt>{f.label}</dt>
-                        <dd>{m.medical?.[f.key]}</dd>
-                      </div>
-                    ))}
-                  </dl>
+                  <div className="pd-sections">
+                    <section className="pd-section wide">
+                      <table className="pd-rows">
+                        <tbody>
+                          {MEDICAL_FIELDS.filter((f) => m.medical?.[f.key]).map((f) => (
+                            <tr key={f.key}>
+                              <th scope="row">{f.label}</th>
+                              <td>{m.medical?.[f.key]}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </section>
+                  </div>
                 </div>
               ))}
             </section>
@@ -170,23 +178,3 @@ export default function FamilySheet() {
   )
 }
 
-function SheetItem({ item, fields }: { item: Item; fields?: string[] }) {
-  const lines = itemLines(item, 'omit', { only: fields })
-  return (
-    <div className="pd-item">
-      <div className="pd-name">{item.name}</div>
-      {item.belongsTo.length > 0 && <div className="pd-meta">{item.belongsTo.join(', ')}</div>}
-      <dl className="pd-grid">
-        {lines.map((l) => (
-          <div key={l.label}>
-            <dt>{l.label}</dt>
-            <dd>{l.value}</dd>
-          </div>
-        ))}
-      </dl>
-      {item.lockerContents && item.lockerContents.length > 0 && (
-        <p className="pd-meta">Contents: {item.lockerContents.map((e) => e.item).join(', ')}</p>
-      )}
-    </div>
-  )
-}
