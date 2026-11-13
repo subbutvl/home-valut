@@ -1,6 +1,6 @@
 import { Check, Plus, X } from 'lucide-react'
 import { useMemo, useState, type FormEvent } from 'react'
-import { Navigate, useNavigate, useParams } from 'react-router-dom'
+import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Card, StickyBar } from '@/components/common'
 import { FieldInput, SecretInput } from '@/components/FieldInput'
@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
-import { CATEGORY_BY_ID, itemPath } from '@/lib/categories'
+import { CATEGORY_BY_ID, UNIQUE_FIELDS, itemPath } from '@/lib/categories'
 import type { Item } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { blankItem, deleteAttachmentBytes, newId, saveItem, updateSettings, useVault } from '@/lib/vault'
@@ -20,17 +20,43 @@ function uniq(values: (string | undefined)[]) {
   return [...new Set(values.map((v) => v?.trim()).filter((v): v is string => !!v))].sort((a, b) => a.localeCompare(b))
 }
 
-export default function ItemForm() {
-  const { cat: catParam, id } = useParams()
-  const { items } = useVault()
-  const existing = id ? items.find((i) => i.id === id) : undefined
-  if (id && !existing) return <Navigate to="/" replace />
-  const catId = existing?.category ?? catParam ?? ''
-  if (!CATEGORY_BY_ID[catId]) return <Navigate to="/add" replace />
-  return <Form key={id ?? catId} initial={existing ?? blankItem(catId)} isNew={!existing} />
+/** A new item pre-filled from another one; the fields unique to each item are left empty. */
+function copyOf(src: Item): Item {
+  const clear = new Set(UNIQUE_FIELDS[src.category] ?? [])
+  return {
+    ...blankItem(src.category),
+    name: `${src.name} (copy)`,
+    subcategory: src.subcategory,
+    belongsTo: [...src.belongsTo],
+    nominees: src.nominees.map((n) => ({ ...n })),
+    tags: [...src.tags],
+    fields: Object.fromEntries(Object.entries(src.fields).filter(([k]) => !clear.has(k))),
+    custom: src.custom.map((c) => ({ ...c, id: newId() })),
+    leadDays: src.leadDays,
+  }
 }
 
-function Form({ initial, isNew }: { initial: Item; isNew: boolean }) {
+export default function ItemForm() {
+  const { cat: catParam, id } = useParams()
+  const [params] = useSearchParams()
+  const { items } = useVault()
+  const existing = id ? items.find((i) => i.id === id) : undefined
+  const from = params.get('from')
+  const source = from ? items.find((i) => i.id === from && !i.deletedAt) : undefined
+  if (id && !existing) return <Navigate to="/" replace />
+  const catId = existing?.category ?? source?.category ?? catParam ?? ''
+  if (!CATEGORY_BY_ID[catId]) return <Navigate to="/add" replace />
+  return (
+    <Form
+      key={id ?? from ?? catId}
+      initial={existing ?? (source ? copyOf(source) : blankItem(catId))}
+      isNew={!existing}
+      copyOf={source?.name}
+    />
+  )
+}
+
+function Form({ initial, isNew, copyOf: copiedFrom }: { initial: Item; isNew: boolean; copyOf?: string }) {
   const navigate = useNavigate()
   const { items, settings } = useVault()
   const [item, setItem] = useState<Item>(initial)
@@ -111,6 +137,13 @@ function Form({ initial, isNew }: { initial: Item; isNew: boolean }) {
         <h1 className="text-[17px] font-bold">{isNew ? `New ${cat.short === "FD / RD" ? cat.short : cat.short.toLowerCase()}` : `Edit ${cat.short === "FD / RD" ? cat.short : cat.short.toLowerCase()}`}</h1>
         <span className="w-[52px]" />
       </StickyBar>
+
+      {copiedFrom && (
+        <p className="rounded-xl bg-accent px-4 py-3 text-sm text-accent-foreground">
+          Copied from <strong>{copiedFrom}</strong>. Numbers, amounts and dates are left empty. Fill those in and change
+          the name.
+        </p>
+      )}
 
       <Card className="flex flex-col gap-3.5 p-4">
         <div className="flex flex-col gap-1.5">

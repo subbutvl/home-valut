@@ -450,3 +450,26 @@ export const CATEGORY_GROUPS: { title: string; ids: string[] }[] = [
   { title: 'Home, vehicles and bills', ids: ['utility', 'appliance', 'vehicle', 'subscription'] },
   { title: 'People and logins', ids: ['contact', 'password', 'other'] },
 ]
+
+/**
+ * Fields that are different on every item of a kind (numbers, amounts, dates).
+ * "Duplicate" keeps everything else, so only these need typing.
+ */
+export const UNIQUE_FIELDS: Record<string, string[]> = {
+  bank: ['accountNumber', 'balance', 'balanceAsOf'],
+  card: ['last4', 'expiry', 'billDue', 'fullNumber', 'cvv', 'atmPin'],
+  deposit: ['number', 'amount', 'startDate', 'maturityDate', 'maturityAmount', 'interestActual'],
+  investment: ['number', 'invested', 'maturityDate', 'units', 'purchaseDate'],
+  gold: ['weight', 'billNumber', 'price'],
+  locker: ['lockerNumber', 'keyNumber'],
+  property: ['address', 'doorNumber', 'patta', 'regNumber', 'regDate', 'taxNumber'],
+  loan: ['accountNumber', 'emi', 'emiDate', 'endDate', 'sanctioned', 'outstanding', 'startDate'],
+  utility: ['consumerNumber', 'billDue'],
+  id: ['number', 'expiry', 'issueDate'],
+  insurance: ['policyNumber', 'premium', 'nextPremium', 'sumAssured', 'startDate', 'endDate'],
+  vehicle: ['registration', 'chassis', 'engine', 'fastag', 'purchaseDate'],
+  appliance: ['model', 'serial', 'invoice', 'purchaseDate', 'warrantyEnd', 'price'],
+  subscription: ['renewal'],
+  contact: ['phone', 'phone2', 'email'],
+  password: ['userId', 'password', 'pin'],
+}

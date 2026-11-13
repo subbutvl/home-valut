@@ -16,7 +16,7 @@ import { cn } from '@/lib/utils'
 import { markDone } from '@/components/Reminders'
 import { PROBLEM_TEXT, passwordIssues } from '@/lib/checks'
 import { dueEntries } from '@/lib/reminders'
-import { moveToBin, newId, saveItem, toggleFavourite, useVault } from '@/lib/vault'
+import { moveToBin, toggleFavourite, useVault } from '@/lib/vault'
 
 function display(fd: FieldDef, v: string): string {
   switch (fd.type) {
@@ -61,10 +61,7 @@ export function ItemDetail({ item, backTo }: { item: Item; backTo: string }) {
     toast('Moved to Bin. You can restore it for 30 days.')
     navigate(backTo)
   }
-  const onDuplicate = async () => {
-    const copy = await saveItem({ ...item, id: newId(), name: `${item.name} (copy)`, favourite: false, createdAt: 0, attachments: undefined })
-    navigate(`/edit/${copy.id}`)
-  }
+  const onDuplicate = () => navigate(`/add/${item.category}?from=${item.id}`)
 
   return (
     <div className="flex flex-col gap-3.5">
@@ -84,6 +81,15 @@ export function ItemDetail({ item, backTo }: { item: Item; backTo: string }) {
           className="flex size-11 shrink-0 items-center justify-center rounded-full hover:bg-muted"
         >
           <Star className={cn('size-[22px]', item.favourite ? 'fill-amber-400 stroke-amber-600' : 'stroke-muted-foreground')} />
+        </button>
+        <button
+          type="button"
+          onClick={onDuplicate}
+          aria-label="Duplicate: make a new one like this"
+          title="Duplicate"
+          className="flex size-11 shrink-0 items-center justify-center rounded-full hover:bg-muted"
+        >
+          <CopyIcon className="size-[20px] text-muted-foreground" />
         </button>
         <Button asChild variant="outline" className="rounded-full">
           <Link to={`/edit/${item.id}`}>

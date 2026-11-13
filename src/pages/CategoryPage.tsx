@@ -1,4 +1,4 @@
-import { Plus } from 'lucide-react'
+import { Copy, Plus } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import { Page } from '@/components/AppShell'
@@ -33,13 +33,11 @@ function Row({ item, active }: { item: Item; active: boolean }) {
   const detail = cat.rowDetail?.(item.fields) || item.subcategory || ''
   const people = item.belongsTo.join(', ')
   return (
+    <div className={cn('flex items-center border-b border-border/60 last:border-b-0', active ? 'bg-accent' : 'hover:bg-muted/60')}>
     <Link
       to={itemPath(item)}
       aria-current={active ? 'page' : undefined}
-      className={cn(
-        'flex items-center gap-3 border-b border-border/60 px-4 py-3.5 last:border-b-0',
-        active ? 'bg-accent' : 'hover:bg-muted/60',
-      )}
+      className="flex min-w-0 flex-1 items-center gap-3 py-3.5 pl-4"
     >
       <span className={cn('size-2.5 shrink-0 rounded-full', DOT[urg])} aria-hidden="true" />
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
@@ -57,6 +55,15 @@ function Row({ item, active }: { item: Item; active: boolean }) {
         </span>
       )}
     </Link>
+      <Link
+        to={`/add/${item.category}?from=${item.id}`}
+        aria-label={`Duplicate ${item.name}`}
+        title="Duplicate"
+        className="flex size-11 shrink-0 items-center justify-center text-muted-foreground hover:text-foreground"
+      >
+        <Copy className="size-[18px]" />
+      </Link>
+    </div>
   )
 }
 
