@@ -6,7 +6,7 @@ import { AppShell } from '@/components/AppShell'
 import { Toaster } from '@/components/ui/sonner'
 import { useAutoLock } from '@/lib/secure-ui'
 import { getSyncMeta } from '@/lib/db'
-import { getToken, startSignIn, type RedirectResult } from '@/lib/drive'
+import { getToken, startSignIn, verifyTokenScopes, type RedirectResult } from '@/lib/drive'
 import { loadSyncState, markConnected, openFromDrive, setConflictHandler, startAutoSync, syncNow } from '@/lib/sync'
 import { getState, init, useVault } from '@/lib/vault'
 import Backup from '@/pages/Backup'
@@ -103,6 +103,14 @@ async function start(redirect: RedirectResult | null, setNotice: (s: string) => 
       sessionStorage.setItem(NO_AUTO, '1')
       if (missing) toast.error(msg, { duration: 15000 })
     } else if (redirect.purpose === 'open') setNotice(msg)
+    else toast.error(msg, { duration: 15000 })
+    return
+  }
+  // Double-check with Google that Drive files access was really given.
+  if (redirect?.ok && (await verifyTokenScopes()) === 'missing') {
+    const msg =
+      'Google Drive access was not allowed. Sign in again and tick “See, edit, create and delete only the specific Google Drive files you use with this app”.'
+    if (redirect.purpose === 'open') setNotice(msg)
     else toast.error(msg, { duration: 15000 })
     return
   }

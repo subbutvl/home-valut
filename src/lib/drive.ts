@@ -8,8 +8,9 @@
 
 export const CLIENT_ID: string = import.meta.env.VITE_GOOGLE_CLIENT_ID ?? ''
 // drive.file: only files and folders this app created (the HomeVault folder).
-// drive.appdata: only to move a copy saved by the first sync version into the folder.
-const SCOPE = 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/drive.appdata'
+// Only drive.file is asked for: one permission, one tick box on Google's screen.
+const SCOPE = 'https://www.googleapis.com/auth/drive.file'
+const APPDATA_SCOPE = 'auth/drive.appdata'
 const TOKEN_KEY = 'hv-drive-token'
 const PENDING_KEY = 'hv-oauth'
 const API = 'https://www.googleapis.com/drive/v3'
@@ -70,7 +71,10 @@ export function handleRedirect(): RedirectResult | null {
   const token = p.get('access_token')
   if (!token) return { purpose: pending.purpose, ok: false, error: p.get('error') ?? 'unknown' }
   const expiresIn = Number(p.get('expires_in') ?? 3600)
-  localStorage.setItem(TOKEN_KEY, JSON.stringify({ token, expiresAt: Date.now() + (expiresIn - 120) * 1000 }))
+  localStorage.setItem(
+    TOKEN_KEY,
+    JSON.stringify({ token, expiresAt: Date.now() + (expiresIn - 120) * 1000, scope: p.get('scope') ?? '' }),
+  )
   // Google lets people untick permissions on the consent screen. Without drive.file nothing can be saved.
   const granted = p.get('scope') ?? ''
   if (granted && !granted.includes('auth/drive.file')) {
@@ -78,6 +82,33 @@ export function handleRedirect(): RedirectResult | null {
     return { purpose: pending.purpose, ok: false, error: 'missing_drive_permission' }
   }
   return { purpose: pending.purpose, ok: true }
+}
+
+/** Ask Google which permissions this token really has. */
+export async function verifyTokenScopes(): Promise<'ok' | 'missing' | 'unknown'> {
+  const token = getToken()
+  if (!token) return 'unknown'
+  try {
+    const res = await fetch(`https://oauth2.googleapis.com/tokeninfo?access_token=${encodeURIComponent(token)}`)
+    if (!res.ok) return 'unknown'
+    const info = (await res.json()) as { scope?: string }
+    const scope = info.scope ?? ''
+    const raw = JSON.parse(localStorage.getItem(TOKEN_KEY) ?? '{}')
+    localStorage.setItem(TOKEN_KEY, JSON.stringify({ ...raw, scope }))
+    if (scope.includes('auth/drive.file')) return 'ok'
+    localStorage.removeItem(TOKEN_KEY)
+    return 'missing'
+  } catch {
+    return 'unknown'
+  }
+}
+
+function grantedScope(): string {
+  try {
+    return (JSON.parse(localStorage.getItem(TOKEN_KEY) ?? '{}') as { scope?: string }).scope ?? ''
+  } catch {
+    return ''
+  }
 }
 
 export function getToken(): string | null {
@@ -124,7 +155,11 @@ async function explain(res: Response): Promise<Error> {
     return new DriveError(
       'The Google Drive API is switched off for this app. In Google Cloud, open the HomeVault project, then APIs & Services → Library → Google Drive API → Enable.',
     )
-  if (reason === 'insufficientPermissions' || reason === 'ACCESS_TOKEN_SCOPE_INSUFFICIENT' || /insufficient.*scope/i.test(message)) {
+  if (
+    reason === 'insufficientPermissions' ||
+    reason === 'ACCESS_TOKEN_SCOPE_INSUFFICIENT' ||
+    /insufficient.*scope|granted scopes do not/i.test(message)
+  ) {
     localStorage.removeItem(TOKEN_KEY)
     return new DriveAuthError('Google Drive permission is missing. Sign in again and allow access to Drive files.', true)
   }
@@ -212,6 +247,7 @@ export async function findFile(name: string, folderId: string): Promise<DriveFil
 
 /** A vault file left in the hidden app folder by the first version of sync. */
 export async function findLegacyFile(name: string): Promise<DriveFile | null> {
+  if (!grantedScope().includes(APPDATA_SCOPE)) return null
   try {
     return (await query(`name = '${esc(name)}'`, 'appDataFolder'))[0] ?? null
   } catch {
