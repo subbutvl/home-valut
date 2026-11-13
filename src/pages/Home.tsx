@@ -1,13 +1,14 @@
 import { Lock, Search } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Page } from '@/components/AppShell'
-import { FavStar, TileMark } from '@/components/common'
+import { CategoryGrid, CategoryIcon } from '@/components/CategoryIcon'
+import { FavStar } from '@/components/common'
 import { DueRow } from '@/components/Reminders'
 import { SyncStatus } from '@/components/SyncStatus'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { allDue } from '@/lib/reminders'
 import { NotificationBell } from '@/pages/Notifications'
-import { CATEGORIES, getCategory, itemPath } from '@/lib/categories'
+import { getCategory, itemPath } from '@/lib/categories'
 import type { Item } from '@/lib/types'
 import { lock, useVault } from '@/lib/vault'
 
@@ -110,7 +111,7 @@ export default function Home() {
                 to={itemPath(i)}
                 className="flex items-center gap-3 border-b border-border/60 px-4 py-3 last:border-b-0"
               >
-                <TileMark mark={getCategory(i.category).mark} className="size-8 text-xs" />
+                <CategoryIcon id={i.category} size="sm" />
                 <div className="flex min-w-0 flex-col">
                   <span className="truncate text-[15px] font-semibold">{i.name}</span>
                   <span className="truncate text-[13px] text-muted-foreground">{getCategory(i.category).name}</span>
@@ -123,21 +124,7 @@ export default function Home() {
 
       <section className="flex flex-col gap-2.5">
         <h2 className="text-[17px] font-bold">Categories</h2>
-        <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-4 lg:grid-cols-5">
-          {CATEGORIES.map((c) => (
-            <Link
-              key={c.id}
-              to={`/c/${c.id}`}
-              className="flex min-h-[92px] flex-col gap-2 rounded-[14px] border bg-card p-3 hover:border-primary/40"
-            >
-              <TileMark mark={c.mark} />
-              <span className="text-[13px] leading-tight font-semibold">{c.name}</span>
-              <span className="text-xs text-muted-foreground">
-                {counts[c.id] ?? 0} {counts[c.id] === 1 ? 'item' : 'items'}
-              </span>
-            </Link>
-          ))}
-        </div>
+        <CategoryGrid hrefFor={(id) => `/c/${id}`} counts={counts} />
       </section>
     </Page>
   )

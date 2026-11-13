@@ -1,7 +1,8 @@
 import { Link } from 'react-router-dom'
 import { Page } from '@/components/AppShell'
-import { PageHeader, TileMark } from '@/components/common'
-import { CATEGORIES, CATEGORY_BY_ID } from '@/lib/categories'
+import { CategoryGrid, CategoryIcon } from '@/components/CategoryIcon'
+import { PageHeader } from '@/components/common'
+import { CATEGORY_BY_ID } from '@/lib/categories'
 import { useVault } from '@/lib/vault'
 
 export default function AddChoose() {
@@ -27,29 +28,16 @@ export default function AddChoose() {
               <Link
                 key={id}
                 to={`/add/${id}`}
-                className="flex h-10 items-center rounded-full bg-accent px-4 text-sm font-semibold text-accent-foreground"
+                className="flex h-10 items-center gap-2 rounded-full bg-accent pr-4 pl-2 text-sm font-semibold text-accent-foreground"
               >
+                <CategoryIcon id={id} size="sm" className="size-7 bg-transparent" />
                 {CATEGORY_BY_ID[id].short}
               </Link>
             ))}
           </div>
         </section>
       )}
-      <section className="flex flex-col gap-2">
-        <p className="text-[13px] text-muted-foreground">All categories</p>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-          {CATEGORIES.map((c) => (
-            <Link
-              key={c.id}
-              to={`/add/${c.id}`}
-              className="flex h-13 items-center gap-2.5 rounded-xl border bg-card px-3 text-sm font-medium hover:border-primary/40"
-            >
-              <TileMark mark={c.mark} className="size-7 rounded-lg text-xs" />
-              {c.short}
-            </Link>
-          ))}
-        </div>
-      </section>
+      <CategoryGrid hrefFor={(id) => `/add/${id}`} />
     </Page>
   )
 }

@@ -9,6 +9,7 @@ import type { Item } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { useIsWide } from '@/lib/use-media'
 import { markViewed, useVault } from '@/lib/vault'
+import { CategoryIcon } from '@/components/CategoryIcon'
 import { SubscriptionTotal } from '@/components/Reminders'
 import { ItemDetail } from './ItemDetail'
 
@@ -101,7 +102,12 @@ export default function CategoryPage() {
   const list = (
     <div className="flex flex-col gap-3.5">
       <PageHeader
-        title={cat.name}
+        title={
+          <span className="flex items-center gap-2.5">
+            <CategoryIcon id={cat.id} size="sm" />
+            {cat.name}
+          </span>
+        }
         back="/"
         subtitle={subtitle}
         right={

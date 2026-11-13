@@ -2,6 +2,7 @@ import { ChevronRight, Search as SearchIcon, X } from 'lucide-react'
 import { useMemo } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Page } from '@/components/AppShell'
+import { CategoryIcon } from '@/components/CategoryIcon'
 import { EmptyState } from '@/components/common'
 import { CATEGORIES, getCategory, itemPath } from '@/lib/categories'
 import { groupByCategory, search } from '@/lib/search'
@@ -127,7 +128,10 @@ export default function Search() {
 
       {groups.map((g) => (
         <section key={g.category.id} className="flex flex-col gap-2">
-          <h2 className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">{g.category.name}</h2>
+          <h2 className="flex items-center gap-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+            <CategoryIcon id={g.category.id} size="sm" className="size-6 rounded-md [&_svg]:size-3.5" />
+            {g.category.name}
+          </h2>
           <div className="overflow-hidden rounded-2xl border bg-card">
             {g.hits.map((h) => (
               <Link

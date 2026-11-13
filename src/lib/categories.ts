@@ -442,3 +442,12 @@ export function formatDate(iso: string): string {
 export function itemPath(i: { id: string; category: string }) {
   return `/c/${i.category}/${i.id}`
 }
+
+/** Home and Add show categories in these groups. */
+export const CATEGORY_GROUPS: { title: string; ids: string[] }[] = [
+  { title: 'Money', ids: ['bank', 'card', 'deposit', 'investment', 'loan'] },
+  { title: 'Property and valuables', ids: ['property', 'gold', 'locker'] },
+  { title: 'Insurance and IDs', ids: ['insurance', 'id'] },
+  { title: 'Home, vehicles and bills', ids: ['utility', 'appliance', 'vehicle', 'subscription'] },
+  { title: 'People and logins', ids: ['contact', 'password', 'other'] },
+]

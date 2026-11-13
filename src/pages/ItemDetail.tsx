@@ -1,6 +1,7 @@
 import { CalendarClock, Check, Copy as CopyIcon, Pencil, Star, Trash2 } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
+import { CategoryIcon } from '@/components/CategoryIcon'
 import { Card, ValueRow } from '@/components/common'
 import { Button } from '@/components/ui/button'
 import { formatDate, formatINR, getCategory, type FieldDef } from '@/lib/categories'
@@ -62,7 +63,10 @@ export function ItemDetail({ item, backTo }: { item: Item; backTo: string }) {
     <div className="flex flex-col gap-3.5">
       <div className="flex items-start gap-2">
         <div className="flex min-w-0 flex-1 flex-col gap-1">
-          <p className="text-[13px] text-muted-foreground">{meta}</p>
+          <p className="flex items-center gap-1.5 text-[13px] text-muted-foreground">
+            <CategoryIcon id={item.category} size="sm" className="size-6 rounded-md [&_svg]:size-3.5" />
+            {meta}
+          </p>
           <h1 className="text-[26px] leading-tight font-bold break-words">{item.name}</h1>
         </div>
         <button

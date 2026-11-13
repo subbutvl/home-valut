@@ -61,7 +61,7 @@ async function evaluate(credentialId: Uint8Array<ArrayBuffer>, salt: Uint8Array<
       extensions: { prf: { eval: { first: salt } } } as AuthenticationExtensionsClientInputs,
     },
   })) as PublicKeyCredential | null
-  const prf = (cred?.getClientExtensionResults() as { prf?: PrfOutputs }).prf
+  const prf = cred ? (cred.getClientExtensionResults() as { prf?: PrfOutputs }).prf : undefined
   if (!prf?.results?.first) throw new Error('This device cannot use a passkey to unlock')
   return prfKey(prf.results.first)
 }

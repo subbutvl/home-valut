@@ -1,6 +1,7 @@
 import { Bell, CalendarClock, Home, Lock, Plus, Search, Settings } from 'lucide-react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
-import { CATEGORIES } from '@/lib/categories'
+import { CATEGORY_ICONS } from '@/components/CategoryIcon'
+import { CATEGORY_BY_ID, CATEGORY_GROUPS } from '@/lib/categories'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { cn } from '@/lib/utils'
 import { unreadCount } from '@/lib/notifications'
@@ -25,7 +26,7 @@ export function AppShell() {
 
   return (
     <div className="min-h-dvh lg:flex">
-      <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col gap-1 overflow-y-auto border-r bg-card px-3 py-5 lg:flex">
+      <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col gap-1 overflow-y-auto border-r bg-card px-3 py-5 lg:flex [&_a]:shrink-0 [&>*]:shrink-0">
         <div className="flex items-center justify-between px-3 pb-3">
           <span className="flex-1 text-xl font-bold">HomeVault</span>
           <ThemeToggle className="size-9 border-0 bg-transparent hover:bg-muted [&_svg]:size-4" />
@@ -69,8 +70,10 @@ export function AppShell() {
             </span>
           )}
         </NavLink>
-        <p className="px-3 pt-5 pb-1 text-xs font-semibold tracking-wide text-muted-foreground">CATEGORIES</p>
-        {CATEGORIES.map((c) => (
+        {CATEGORY_GROUPS.map((g) => (
+          <div key={g.title} className="flex flex-col gap-0.5">
+            <p className="px-3 pt-4 pb-1 text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">{g.title}</p>
+            {g.ids.map((id) => CATEGORY_BY_ID[id]).map((c) => (
           <NavLink
             key={c.id}
             to={`/c/${c.id}`}
@@ -83,9 +86,14 @@ export function AppShell() {
               )
             }
           >
-            <span className="truncate">{c.name}</span>
+            <span className="flex min-w-0 items-center gap-2.5">
+              <CategoryIconPlain id={c.id} />
+              <span className="truncate">{c.name}</span>
+            </span>
             <span className="text-xs text-muted-foreground">{counts[c.id] ?? ''}</span>
           </NavLink>
+            ))}
+          </div>
         ))}
       </aside>
 
@@ -127,4 +135,9 @@ export function Page({ children, wide }: { children: React.ReactNode; wide?: boo
       {children}
     </main>
   )
+}
+
+function CategoryIconPlain({ id }: { id: string }) {
+  const Icon = CATEGORY_ICONS[id]
+  return <Icon aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" strokeWidth={1.8} />
 }
