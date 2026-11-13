@@ -1,19 +1,22 @@
-import { Home, Lock, Plus, Search, Settings } from 'lucide-react'
+import { Bell, CalendarClock, Home, Lock, Plus, Search, Settings } from 'lucide-react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { CATEGORIES } from '@/lib/categories'
 import { cn } from '@/lib/utils'
+import { unreadCount } from '@/lib/notifications'
 import { lock, useVault } from '@/lib/vault'
 
 const TABS = [
   { to: '/', label: 'Home', icon: Home },
-  { to: '/search', label: 'Search', icon: Search },
+  { to: '/coming-up', label: 'Coming up', icon: CalendarClock },
   { to: '/add', label: 'Add', icon: Plus },
+  { to: '/search', label: 'Search', icon: Search },
   { to: '/settings', label: 'Settings', icon: Settings },
 ]
 
 /** Bottom bar on phone, left sidebar on laptop. */
 export function AppShell() {
-  const { items } = useVault()
+  const { items, settings } = useVault()
+  const unread = unreadCount(settings)
   const { pathname } = useLocation()
   const counts: Record<string, number> = {}
   for (const i of items) if (!i.deletedAt) counts[i.category] = (counts[i.category] ?? 0) + 1
@@ -48,6 +51,22 @@ export function AppShell() {
             <t.icon className="size-[18px]" /> {t.label === 'Add' ? 'Add item' : t.label}
           </NavLink>
         ))}
+        <NavLink
+          to="/notifications"
+          className={({ isActive }) =>
+            cn(
+              'flex h-10 items-center gap-3 rounded-lg px-3 text-[15px] font-medium',
+              isActive ? 'bg-accent text-accent-foreground' : 'hover:bg-muted',
+            )
+          }
+        >
+          <Bell className="size-[18px]" /> <span className="flex-1">Notifications</span>
+          {unread > 0 && (
+            <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1 text-xs font-bold text-white">
+              {unread}
+            </span>
+          )}
+        </NavLink>
         <p className="px-3 pt-5 pb-1 text-xs font-semibold tracking-wide text-muted-foreground">CATEGORIES</p>
         {CATEGORIES.map((c) => (
           <NavLink
@@ -84,7 +103,7 @@ export function AppShell() {
               end={t.to === '/'}
               className={({ isActive }) =>
                 cn(
-                  'flex h-14 w-20 flex-col items-center gap-1 pt-1 text-[11px] font-semibold',
+                  'flex h-14 w-[72px] flex-col items-center gap-1 pt-1 text-[11px] font-semibold',
                   isActive ? 'text-primary' : 'text-muted-foreground',
                 )
               }

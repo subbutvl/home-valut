@@ -2,7 +2,10 @@ import { Lock, Search } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Page } from '@/components/AppShell'
 import { FavStar, TileMark } from '@/components/common'
+import { DueRow } from '@/components/Reminders'
 import { SyncStatus } from '@/components/SyncStatus'
+import { allDue } from '@/lib/reminders'
+import { NotificationBell } from '@/pages/Notifications'
 import { CATEGORIES, getCategory, itemPath } from '@/lib/categories'
 import type { Item } from '@/lib/types'
 import { lock, useVault } from '@/lib/vault'
@@ -18,6 +21,9 @@ export default function Home() {
     ...settings.favouriteOrder.map((id) => byId.get(id)).filter((i): i is Item => !!i?.favourite),
     ...live.filter((i) => i.favourite && !settings.favouriteOrder.includes(i.id)),
   ]
+  const due = allDue(live, settings).filter((e) => e.days <= 90)
+  const upcoming = due.slice(0, 3)
+  const dueCount = due.length
   const recent = settings.recentlyViewed.map((id) => byId.get(id)).filter((i): i is Item => !!i)
 
   return (
@@ -27,14 +33,17 @@ export default function Home() {
           <h1 className="text-[26px] font-bold">HomeVault</h1>
           <SyncStatus />
         </div>
-        <button
-          type="button"
-          onClick={lock}
-          aria-label="Lock now"
-          className="flex size-11 items-center justify-center rounded-full border bg-card lg:hidden"
-        >
-          <Lock className="size-5" />
-        </button>
+        <div className="flex gap-2">
+          <NotificationBell />
+          <button
+            type="button"
+            onClick={lock}
+            aria-label="Lock now"
+            className="flex size-11 items-center justify-center rounded-full border bg-card lg:hidden"
+          >
+            <Lock className="size-5" />
+          </button>
+        </div>
       </header>
 
       <Link
@@ -55,6 +64,20 @@ export default function Home() {
             . Only the name is required.
           </p>
         </div>
+      )}
+
+      {upcoming.length > 0 && (
+        <section className="overflow-hidden rounded-2xl border bg-card">
+          <div className="flex items-center justify-between px-4 pt-3.5 pb-1">
+            <h2 className="text-[17px] font-bold">Coming up</h2>
+            <Link to="/coming-up" className="text-sm font-semibold text-primary">
+              See all {dueCount}
+            </Link>
+          </div>
+          {upcoming.map((e) => (
+            <DueRow key={`${e.item.id}:${e.field.key}`} e={e} compact />
+          ))}
+        </section>
       )}
 
       {favs.length > 0 && (

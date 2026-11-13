@@ -133,6 +133,37 @@ export default function Settings() {
         <Row label="Bin" value={binCount ? `${binCount} ${binCount === 1 ? 'item' : 'items'}` : 'Empty'} to="/settings/bin" />
       </Group>
 
+      <Group title="REMINDERS">
+        <label className={rowClass}>
+          <span className="flex-1 text-[15px] font-medium">Maturities, policies, warranties, IDs</span>
+          <select
+            value={settings.leadLong}
+            onChange={(e) => updateSettings({ leadLong: Number(e.target.value) })}
+            className="bg-transparent text-right text-sm text-muted-foreground outline-none"
+          >
+            {[15, 30, 45, 60, 90].map((d) => (
+              <option key={d} value={d}>
+                {d} days before
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className={rowClass}>
+          <span className="flex-1 text-[15px] font-medium">Bills and subscriptions</span>
+          <select
+            value={settings.leadShort}
+            onChange={(e) => updateSettings({ leadShort: Number(e.target.value) })}
+            className="bg-transparent text-right text-sm text-muted-foreground outline-none"
+          >
+            {[1, 3, 5, 7, 10, 15].map((d) => (
+              <option key={d} value={d}>
+                {d} {d === 1 ? 'day' : 'days'} before
+              </option>
+            ))}
+          </select>
+        </label>
+      </Group>
+
       <Group title="ABOUT">
         <Row label="App version" value={__APP_VERSION__} />
         {usage && <Row label="Storage on this device" value={usage} />}

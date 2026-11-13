@@ -37,7 +37,7 @@ export function nextDue(item: Item): Due | null {
   for (const fd of getCategory(item.category).fields) {
     if (!fd.reminder) continue
     const date = parseDate(item.fields[fd.key], fd.type)
-    if (!date) continue
+    if (!date || item.done?.[fd.key] === item.fields[fd.key]) continue
     const due = { date, label: fd.reminder.label, days: daysUntil(date) }
     // Prefer overdue/upcoming over long-past dates on non-repeating fields
     if (!best || due.date < best.date) best = due

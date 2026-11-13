@@ -1,4 +1,4 @@
-import { CalendarClock, Copy as CopyIcon, Pencil, Star, Trash2 } from 'lucide-react'
+import { CalendarClock, Check, Copy as CopyIcon, Pencil, Star, Trash2 } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Card, ValueRow } from '@/components/common'
@@ -8,7 +8,9 @@ import { dueText, isStale, shortDate, nextDue, urgency } from '@/lib/dates'
 import { estimateFd } from '@/lib/estimates'
 import type { Item } from '@/lib/types'
 import { cn } from '@/lib/utils'
-import { moveToBin, newId, saveItem, toggleFavourite } from '@/lib/vault'
+import { markDone } from '@/components/Reminders'
+import { dueEntries } from '@/lib/reminders'
+import { moveToBin, newId, saveItem, toggleFavourite, useVault } from '@/lib/vault'
 
 function display(fd: FieldDef, v: string): string {
   switch (fd.type) {
@@ -38,6 +40,11 @@ export function ItemDetail({ item, backTo }: { item: Item; backTo: string }) {
   const urg = urgency(due)
   const filled = cat.fields.filter((fd) => item.fields[fd.key])
   const fd = item.category === 'deposit' ? estimateFd(item) : null
+  const { settings } = useVault()
+  // "Mark done" for bills, premiums, EMIs, subscriptions, once they are within their reminder window.
+  const doneEntry = dueEntries(item, settings)
+    .filter((e) => e.days <= e.lead)
+    .sort((a, b) => a.days - b.days)[0]
 
   const meta = [cat.name, item.subcategory, item.belongsTo.join(', ')].filter(Boolean).join(' · ')
 
@@ -86,6 +93,12 @@ export function ItemDetail({ item, backTo }: { item: Item; backTo: string }) {
             ? `${due.label} · was due ${shortDate(due.date)}`
             : `${dueText(due)} · in ${due.days} ${due.days === 1 ? 'day' : 'days'}`}
         </div>
+      )}
+
+      {doneEntry && (
+        <Button size="lg" onClick={() => markDone(doneEntry)}>
+          <Check /> Mark done{doneEntry.repeatMonths ? ' · move to next cycle' : ''}
+        </Button>
       )}
 
       {item.category === 'bank' && item.fields.balance && (

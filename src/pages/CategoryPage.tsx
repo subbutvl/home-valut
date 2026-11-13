@@ -9,6 +9,7 @@ import type { Item } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { useIsWide } from '@/lib/use-media'
 import { markViewed, useVault } from '@/lib/vault'
+import { SubscriptionTotal } from '@/components/Reminders'
 import { ItemDetail } from './ItemDetail'
 
 const DOT: Record<Urgency, string> = {
@@ -120,6 +121,7 @@ export default function CategoryPage() {
           ) : null
         }
       />
+      {catId === 'subscription' && <SubscriptionTotal items={all} />}
       {peopleInUse.length > 1 && (
         <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
           <Chip active={!person} onClick={() => setPerson('')}>

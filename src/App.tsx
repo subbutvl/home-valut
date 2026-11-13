@@ -10,6 +10,9 @@ import { getToken, startSignIn, type RedirectResult } from '@/lib/drive'
 import { loadSyncState, markConnected, openFromDrive, setConflictHandler, startAutoSync, syncNow } from '@/lib/sync'
 import { getState, init, useVault } from '@/lib/vault'
 import Backup from '@/pages/Backup'
+import ComingUp from '@/pages/ComingUp'
+import Notifications, { NotificationDetail } from '@/pages/Notifications'
+import { addNotification, refreshNotifications } from '@/lib/notifications'
 import AddChoose from '@/pages/AddChoose'
 import Bin from '@/pages/Bin'
 import CategoryPage from '@/pages/CategoryPage'
@@ -41,7 +44,10 @@ function Vault({ notice }: { notice?: string }) {
   const { status, recovered, settings } = useVault()
   useAutoLock(status === 'unlocked', settings.autoLockMinutes)
   useEffect(() => {
-    if (status === 'unlocked') void syncNow()
+    if (status !== 'unlocked') return
+    void syncNow().finally(() => refreshNotifications())
+    const t = window.setInterval(() => void refreshNotifications(), 60 * 60_000)
+    return () => window.clearInterval(t)
   }, [status])
 
   if (status === 'loading') return null
@@ -54,6 +60,9 @@ function Vault({ notice }: { notice?: string }) {
         <Route element={<AppShell />}>
           <Route index element={<Home />} />
           <Route path="search" element={<Search />} />
+          <Route path="coming-up" element={<ComingUp />} />
+          <Route path="notifications" element={<Notifications />} />
+          <Route path="notifications/:id" element={<NotificationDetail />} />
           <Route path="add" element={<AddChoose />} />
           <Route path="add/:cat" element={<ItemForm />} />
           <Route path="edit/:id" element={<ItemForm />} />
@@ -80,9 +89,11 @@ async function start(redirect: RedirectResult | null, setNotice: (s: string) => 
   await init()
   await loadSyncState()
   startAutoSync()
-  setConflictHandler((names) =>
-    toast(`${names.join(', ')} ${names.length === 1 ? 'was' : 'were'} also changed on another device. Kept the newer version.`),
-  )
+  setConflictHandler((names) => {
+    const msg = `${names.join(', ')} ${names.length === 1 ? 'was' : 'were'} also changed on another device. Kept the newer version.`
+    toast(msg)
+    void addNotification({ key: `sync:${Date.now()}`, type: 'sync', title: msg })
+  })
   if (redirect && !redirect.ok) {
     if (redirect.purpose === 'refresh') sessionStorage.setItem(NO_AUTO, '1')
     else setNotice('Google sign-in did not finish. Try again.')

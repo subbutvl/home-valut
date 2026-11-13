@@ -328,6 +328,26 @@ function Form({ initial, isNew }: { initial: Item; isNew: boolean }) {
               suggestions={suggestions[f.key]}
             />
           ))}
+          {cat.fields.some((x) => x.reminder) && (
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="lead" className="text-[13px] font-semibold text-foreground/80">
+                Remind me
+              </Label>
+              <select
+                id="lead"
+                value={item.leadDays ?? ''}
+                onChange={(e) => setItem({ ...item, leadDays: e.target.value === '' ? undefined : Number(e.target.value) })}
+                className="h-12 w-full rounded-xl border border-input bg-card px-3 text-base"
+              >
+                <option value="">Usual time (set in Settings)</option>
+                {[1, 3, 7, 15, 30, 45, 60, 90].map((d) => (
+                  <option key={d} value={d}>
+                    {d} {d === 1 ? 'day' : 'days'} before
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="notes" className="text-[13px] font-semibold text-foreground/80">
               Notes

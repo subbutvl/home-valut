@@ -10,7 +10,9 @@ Phase 1: unlock and encryption, 17 categories with their fields, add / edit / vi
 
 Phase 2a: one vault on every device through Google Drive. First run offers "Create a new vault", "Open my vault from Google Drive" or "Restore from a backup file". Changes sync both ways (the newer edit of an item wins), deletions sync, password changes reach other devices, daily snapshots are kept in Drive (30 daily + 12 monthly) and can be restored, and an encrypted backup file can be exported and imported.
 
-Coming next: Face ID unlock, Coming up and in-app notifications, attachments, Excel/CSV import, printing and the family sheet, lockers, and the health checks. The tax view is on hold.
+Phase 2b: Face ID / fingerprint unlock (passkey with WebAuthn PRF, master password every 7 days), Coming up with Mark done, in-app Notifications centre, subscription total.
+
+Coming next: attachments, Excel/CSV import, printing and the family sheet, lockers, and the health checks. The tax view is on hold.
 
 ## Google Drive
 
