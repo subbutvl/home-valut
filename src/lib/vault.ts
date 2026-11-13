@@ -13,6 +13,7 @@ import {
   unwrapDek,
   wrapDek,
 } from './crypto'
+import { getBioMeta, passkeyKek, registerPasskey } from './biometric'
 import { db, getHeader, getLockout, requestPersistence, type EncRecord, type VaultHeader } from './db'
 import { BIN_DAYS, DEFAULT_SETTINGS, type Item, type Settings } from './types'
 
@@ -74,6 +75,7 @@ export async function replaceLocalVault(header: VaultHeader, records: EncRecord[
     await db.records.bulkPut(records)
     await db.meta.put({ ...header, id: 'header' })
     await db.meta.put({ id: 'lockout', fails: 0, until: 0 })
+    await db.meta.delete('bio')
   })
   set({ status: 'locked', items: [], settings: DEFAULT_SETTINGS, recovered: false })
 }
@@ -162,11 +164,43 @@ export async function unlock(secret: string, using: 'password' | 'recovery' = 'p
     return false
   }
   await db.meta.put({ id: 'lockout', fails: 0, until: 0 })
+  if (using === 'password') {
+    const bio = await getBioMeta()
+    if (bio) await db.meta.put({ ...bio, lastPasswordAt: Date.now() })
+  }
   await loadAll()
   set({ status: 'unlocked', recovered: using === 'recovery' })
   void requestPersistence()
   void purgeOldBin()
   return true
+}
+
+/** Unlock with Face ID / fingerprint. Returns false if it failed or was cancelled. */
+export async function unlockWithBiometric(): Promise<boolean> {
+  const bio = await getBioMeta()
+  if (!bio) return false
+  try {
+    dek = await unwrapDek(bio.wrapped, await passkeyKek(bio))
+  } catch {
+    return false
+  }
+  await loadAll()
+  set({ status: 'unlocked', recovered: false })
+  void purgeOldBin()
+  return true
+}
+
+/** Turn on Face ID / fingerprint unlock for this device. Needs the master password. */
+export async function enableBiometric(password: string): Promise<'ok' | 'wrong-password'> {
+  if (!dek || !(await verifyPassword(password))) return 'wrong-password'
+  const { credentialId, salt, kek } = await registerPasskey()
+  const wrapped = await wrapDek(dek, kek)
+  await db.meta.put({ id: 'bio', credentialId, salt, wrapped, lastPasswordAt: Date.now() })
+  return 'ok'
+}
+
+export async function disableBiometric() {
+  await db.meta.delete('bio')
 }
 
 export function lock() {

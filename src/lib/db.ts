@@ -34,7 +34,16 @@ export interface SyncMeta {
   mismatch?: boolean
 }
 
-export type MetaRow = VaultHeader | Lockout | SyncMeta
+/** Face ID / fingerprint unlock on this device only (never synced). */
+export interface BioMeta {
+  id: 'bio'
+  credentialId: string
+  salt: string
+  wrapped: Sealed
+  lastPasswordAt: number
+}
+
+export type MetaRow = VaultHeader | Lockout | SyncMeta | BioMeta
 
 /** Every user record is stored encrypted. `kind` and timestamps stay in clear for sync. */
 export interface EncRecord extends Sealed {

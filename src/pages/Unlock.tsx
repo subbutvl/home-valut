@@ -1,10 +1,11 @@
-import { Lock } from 'lucide-react'
+import { Lock, ScanFace } from 'lucide-react'
 import { useEffect, useState, type FormEvent } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { PASSWORD_EVERY_DAYS, bioUsable, biometricName, biometricSupported, getBioMeta } from '@/lib/biometric'
 import { formatRecoveryKey } from '@/lib/crypto'
-import { LockedOutError, eraseDevice, lockoutRemaining, unlock } from '@/lib/vault'
+import { LockedOutError, eraseDevice, lockoutRemaining, unlock, unlockWithBiometric } from '@/lib/vault'
 
 export default function Unlock() {
   const [mode, setMode] = useState<'password' | 'recovery'>('password')
@@ -14,9 +15,19 @@ export default function Unlock() {
   const [waitUntil, setWaitUntil] = useState(0)
   const [now, setNow] = useState(Date.now())
 
+  const [bio, setBio] = useState<'none' | 'ready' | 'expired'>('none')
+
   useEffect(() => {
     lockoutRemaining().then((ms) => ms > 0 && setWaitUntil(Date.now() + ms))
+    Promise.all([getBioMeta(), biometricSupported()]).then(([meta, ok]) => {
+      if (meta && ok) setBio(bioUsable(meta) ? 'ready' : 'expired')
+    })
   }, [])
+
+  const onBio = async () => {
+    setError('')
+    if (!(await unlockWithBiometric())) setError(`${biometricName()} did not work. Use your master password.`)
+  }
   useEffect(() => {
     if (waitUntil <= now) return
     const t = setInterval(() => setNow(Date.now()), 1000)
@@ -56,6 +67,29 @@ export default function Unlock() {
         <p className="text-[15px] text-muted-foreground">Locked. Your data stays encrypted on this device.</p>
       </div>
 
+      {bio === 'ready' && mode === 'password' && (
+        <>
+          <button
+            type="button"
+            onClick={onBio}
+            className="flex h-16 w-full items-center justify-center gap-3 rounded-2xl border bg-card text-[17px] font-semibold"
+          >
+            <ScanFace className="size-7 text-primary" strokeWidth={1.8} />
+            Unlock with {biometricName()}
+          </button>
+          <div className="flex w-full items-center gap-3 text-[13px] text-muted-foreground">
+            <div className="h-px flex-1 bg-input" />
+            or
+            <div className="h-px flex-1 bg-input" />
+          </div>
+        </>
+      )}
+      {bio === 'expired' && mode === 'password' && (
+        <p className="text-center text-sm text-muted-foreground">
+          Enter your master password. It is needed every {PASSWORD_EVERY_DAYS} days, then {biometricName()} works again.
+        </p>
+      )}
+
       <form onSubmit={submit} className="flex w-full flex-col gap-3">
         <Label htmlFor="secret" className="text-sm font-semibold">
           {mode === 'password' ? 'Master password' : 'Recovery key'}
@@ -67,7 +101,7 @@ export default function Unlock() {
           autoCapitalize={mode === 'password' ? 'none' : 'characters'}
           autoCorrect="off"
           spellCheck={false}
-          autoFocus
+          autoFocus={bio !== 'ready'}
           value={mode === 'recovery' ? formatRecoveryKey(secret) : secret}
           onChange={(e) => setSecret(e.target.value)}
           placeholder={mode === 'recovery' ? 'XXXX-XXXX-…' : undefined}

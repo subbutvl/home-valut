@@ -11,7 +11,18 @@ import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { changePassword, eraseDevice, lock, newRecoveryKey, updateSettings, useVault } from '@/lib/vault'
+import { Switch } from '@/components/ui/switch'
+import { biometricName, biometricSupported, getBioMeta, PASSWORD_EVERY_DAYS } from '@/lib/biometric'
+import {
+  changePassword,
+  disableBiometric,
+  enableBiometric,
+  eraseDevice,
+  lock,
+  newRecoveryKey,
+  updateSettings,
+  useVault,
+} from '@/lib/vault'
 
 function Group({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -49,7 +60,13 @@ function Row({ label, value, to, onClick }: { label: string; value?: ReactNode; 
 
 export default function Settings() {
   const { settings, items } = useVault()
-  const [dialog, setDialog] = useState<'password' | 'recovery' | null>(null)
+  const [dialog, setDialog] = useState<'password' | 'recovery' | 'bio' | null>(null)
+  const [bioSupported, setBioSupported] = useState(false)
+  const [bioOn, setBioOn] = useState(false)
+  useEffect(() => {
+    biometricSupported().then(setBioSupported)
+    getBioMeta().then((m) => setBioOn(!!m))
+  }, [])
   const [usage, setUsage] = useState('')
   const binCount = items.filter((i) => i.deletedAt).length
 
@@ -87,6 +104,21 @@ export default function Settings() {
             ))}
           </select>
         </label>
+        {bioSupported && (
+          <label className={rowClass}>
+            <span className="flex-1 text-[15px] font-medium">{biometricName()} unlock</span>
+            <Switch
+              checked={bioOn}
+              onCheckedChange={async (on) => {
+                if (on) setDialog('bio')
+                else {
+                  await disableBiometric()
+                  setBioOn(false)
+                }
+              }}
+            />
+          </label>
+        )}
         <Row label="Change master password" onClick={() => setDialog('password')} />
         <Row label="New recovery key" onClick={() => setDialog('recovery')} />
         <Row label="Lock now" onClick={lock} />
@@ -124,6 +156,13 @@ export default function Settings() {
 
       <ChangePasswordDialog open={dialog === 'password'} onClose={() => setDialog(null)} />
       <NewRecoveryKeyDialog open={dialog === 'recovery'} onClose={() => setDialog(null)} />
+      <BiometricDialog
+        open={dialog === 'bio'}
+        onClose={(on) => {
+          setDialog(null)
+          if (on) setBioOn(true)
+        }}
+      />
     </Page>
   )
 }
@@ -223,6 +262,55 @@ function NewRecoveryKeyDialog({ open, onClose }: { open: boolean; onClose: () =>
             </Button>
           </>
         )}
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function BiometricDialog({ open, onClose }: { open: boolean; onClose: (on: boolean) => void }) {
+  const [pw, setPw] = useState('')
+  const [busy, setBusy] = useState(false)
+  const close = (on: boolean) => {
+    setPw('')
+    onClose(on)
+  }
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && close(false)}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Turn on {biometricName()} unlock</DialogTitle>
+          <DialogDescription>
+            For this device only. You still need the master password after {PASSWORD_EVERY_DAYS} days, and your recovery
+            key keeps working.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="biopw" className="text-sm font-semibold">
+            Master password
+          </Label>
+          <Input id="biopw" type="password" autoComplete="current-password" value={pw} onChange={(e) => setPw(e.target.value)} />
+        </div>
+        <Button
+          size="lg"
+          disabled={!pw || busy}
+          onClick={async () => {
+            setBusy(true)
+            try {
+              const r = await enableBiometric(pw)
+              if (r === 'ok') {
+                toast.success(`${biometricName()} unlock is on`)
+                close(true)
+              } else toast.error('That password is not right')
+            } catch (e) {
+              const msg = (e as Error).name === 'NotAllowedError' ? 'Cancelled' : (e as Error).message
+              toast.error(msg)
+            } finally {
+              setBusy(false)
+            }
+          }}
+        >
+          {busy ? 'Waiting…' : 'Turn on'}
+        </Button>
       </DialogContent>
     </Dialog>
   )
