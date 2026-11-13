@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
+import { setTheme, useTheme } from '@/lib/theme'
 import { biometricName, biometricSupported, getBioMeta, PASSWORD_EVERY_DAYS } from '@/lib/biometric'
 import {
   changePassword,
@@ -69,6 +70,7 @@ export default function Settings() {
   }, [])
   const [usage, setUsage] = useState('')
   const binCount = items.filter((i) => i.deletedAt).length
+  const theme = useTheme()
 
   useEffect(() => {
     navigator.storage
@@ -87,6 +89,26 @@ export default function Settings() {
           <SyncStatus />
           <ChevronRight className="size-4 text-muted-foreground" />
         </Link>
+      </Group>
+
+      <Group title="APPEARANCE">
+        <div className={rowClass}>
+          <span className="flex-1 text-[15px] font-medium">Theme</span>
+          <div role="radiogroup" aria-label="Theme" className="flex rounded-full bg-muted p-1">
+            {(['system', 'light', 'dark'] as const).map((t) => (
+              <button
+                key={t}
+                type="button"
+                role="radio"
+                aria-checked={theme.choice === t}
+                onClick={() => setTheme(t)}
+                className={`h-8 rounded-full px-3 text-[13px] font-semibold capitalize ${theme.choice === t ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'}`}
+              >
+                {t === 'system' ? 'Auto' : t}
+              </button>
+            ))}
+          </div>
+        </div>
       </Group>
 
       <Group title="SECURITY">

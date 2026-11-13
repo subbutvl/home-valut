@@ -4,6 +4,7 @@ import { Page } from '@/components/AppShell'
 import { FavStar, TileMark } from '@/components/common'
 import { DueRow } from '@/components/Reminders'
 import { SyncStatus } from '@/components/SyncStatus'
+import { ThemeToggle } from '@/components/ThemeToggle'
 import { allDue } from '@/lib/reminders'
 import { NotificationBell } from '@/pages/Notifications'
 import { CATEGORIES, getCategory, itemPath } from '@/lib/categories'
@@ -34,6 +35,7 @@ export default function Home() {
           <SyncStatus />
         </div>
         <div className="flex gap-2">
+          <ThemeToggle />
           <NotificationBell />
           <button
             type="button"
