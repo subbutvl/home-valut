@@ -1,7 +1,7 @@
 // What goes on paper or into a shared message. Secrets follow the chosen mode:
 // hidden (••••, the default), shown (needs the master password) or left out.
 
-import { formatDate, formatINR, getCategory, type FieldDef } from './categories'
+import { BANK_LINK_LABEL, formatDate, formatINR, getCategory, type FieldDef } from './categories'
 import type { Item } from './types'
 
 export type SecretMode = 'hidden' | 'shown' | 'omit'
@@ -53,10 +53,11 @@ export function itemMeta(item: Item): string {
 }
 
 /** A neat plain-text summary for WhatsApp or any app. */
-export function itemAsText(item: Item, mode: SecretMode): string {
+export function itemAsText(item: Item, mode: SecretMode, accountName?: string): string {
   const cat = getCategory(item.category)
   const lines = [`*${item.name}*`, [cat.name, itemMeta(item)].filter(Boolean).join(' · ')]
   for (const l of itemLines(item, mode, { notes: true })) lines.push(`${l.label}: ${l.value}`)
+  if (accountName) lines.push(`${BANK_LINK_LABEL[item.category] ?? 'Bank account'}: ${accountName}`)
   if (item.lockerContents?.length) {
     lines.push('Contents:')
     for (const e of item.lockerContents) lines.push(`- ${e.item}${e.description ? ` (${e.description})` : ''}`)
@@ -88,7 +89,11 @@ const PEOPLE_KEYS = /^(holders|owners|owner|insured|borrowers|cardHolder|person|
  * An item's details in readable groups: key details, people, dates and money,
  * contact and login, other details, passwords and PINs, extra fields, notes.
  */
-export function itemSections(item: Item, mode: SecretMode, opts: { notes?: boolean; only?: string[] } = {}): Section[] {
+export function itemSections(
+  item: Item,
+  mode: SecretMode,
+  opts: { notes?: boolean; only?: string[]; accountName?: string } = {},
+): Section[] {
   const cat = getCategory(item.category)
   const groups: Record<string, Line[]> = {
     key: [],
@@ -115,6 +120,8 @@ export function itemSections(item: Item, mode: SecretMode, opts: { notes?: boole
     else if (['phone', 'email', 'url'].includes(fd.type) || LOGIN_KEYS.test(fd.key)) groups.contact.push(line)
     else groups.other.push(line)
   }
+  if (opts.accountName && allow('linkedAccount'))
+    groups.key.push({ label: BANK_LINK_LABEL[item.category] ?? 'Bank account', value: opts.accountName })
   if (!opts.only || opts.only.includes('belongsTo'))
     if (item.belongsTo.length) groups.people.unshift({ label: item.belongsTo.length > 1 ? 'Belongs to (joint)' : 'Belongs to', value: item.belongsTo.join(', ') })
   if (allow('nominee') && item.nominees.length)

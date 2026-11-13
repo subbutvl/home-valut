@@ -5,6 +5,7 @@ import { toast } from 'sonner'
 import { CategoryIcon } from '@/components/CategoryIcon'
 import { Card, ValueRow } from '@/components/common'
 import { AttachmentsView } from '@/components/Attachments'
+import { LinkedAccountRow, LinkedToAccount } from '@/components/BankLink'
 import { LockerContentsView } from '@/components/LockerContents'
 import { ShareDialog } from '@/components/ShareDialog'
 import { Button } from '@/components/ui/button'
@@ -189,6 +190,8 @@ export function ItemDetail({ item, backTo }: { item: Item; backTo: string }) {
         </Card>
       )}
 
+      <LinkedAccountRow item={item} />
+
       {pwIssues.length > 0 && (
         <Link to="/health" className="flex flex-col gap-0.5 rounded-xl bg-warn-bg px-4 py-3 text-sm text-warn-fg">
           <span className="font-semibold">Weak password</span>
@@ -210,6 +213,8 @@ export function ItemDetail({ item, backTo }: { item: Item; backTo: string }) {
       )}
 
       {item.lockerContents?.length ? <LockerContentsView value={item.lockerContents} /> : null}
+
+      {item.category === 'bank' && <LinkedToAccount account={item} />}
 
       {item.attachments?.length ? <AttachmentsView value={item.attachments} /> : null}
 

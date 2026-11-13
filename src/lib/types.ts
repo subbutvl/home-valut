@@ -38,6 +38,8 @@ export interface Item {
   /** Set on items added by an Excel/CSV import, so the import can be undone */
   importId?: string
   attachments?: Attachment[]
+  /** The bank account this card, FD, locker, loan… belongs to (an item id) */
+  linkedAccountId?: string
   /** Bank lockers: what is inside */
   lockerContents?: LockerEntry[]
   createdAt: number

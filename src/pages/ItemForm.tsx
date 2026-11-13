@@ -5,6 +5,7 @@ import { toast } from 'sonner'
 import { Card, StickyBar } from '@/components/common'
 import { FieldInput, SecretInput } from '@/components/FieldInput'
 import { AttachmentsEditor } from '@/components/Attachments'
+import { BankLinkPicker } from '@/components/BankLink'
 import { LockerContentsEditor } from '@/components/LockerContents'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -33,7 +34,18 @@ function copyOf(src: Item): Item {
     fields: Object.fromEntries(Object.entries(src.fields).filter(([k]) => !clear.has(k))),
     custom: src.custom.map((c) => ({ ...c, id: newId() })),
     leadDays: src.leadDays,
+    linkedAccountId: src.linkedAccountId,
   }
+}
+
+/** A new card/FD/locker/loan started from a bank account's page. */
+function fromAccount(catId: string, acc: Item): Item {
+  const cat = CATEGORY_BY_ID[catId]
+  const has = (k: string) => cat.fields.some((f) => f.key === k)
+  const fields: Record<string, string> = {}
+  if (has('bank') && acc.fields.bank) fields.bank = acc.fields.bank
+  if (has('branch') && acc.fields.branch) fields.branch = acc.fields.branch
+  return { ...blankItem(catId), linkedAccountId: acc.id, belongsTo: [...acc.belongsTo], fields }
 }
 
 export default function ItemForm() {
@@ -43,13 +55,15 @@ export default function ItemForm() {
   const existing = id ? items.find((i) => i.id === id) : undefined
   const from = params.get('from')
   const source = from ? items.find((i) => i.id === from && !i.deletedAt) : undefined
+  const accountId = params.get('account')
+  const account = accountId ? items.find((i) => i.id === accountId && i.category === 'bank') : undefined
   if (id && !existing) return <Navigate to="/" replace />
   const catId = existing?.category ?? source?.category ?? catParam ?? ''
   if (!CATEGORY_BY_ID[catId]) return <Navigate to="/add" replace />
   return (
     <Form
       key={id ?? from ?? catId}
-      initial={existing ?? (source ? copyOf(source) : blankItem(catId))}
+      initial={existing ?? (source ? copyOf(source) : account ? fromAccount(catId, account) : blankItem(catId))}
       isNew={!existing}
       copyOf={source?.name}
     />
@@ -266,6 +280,8 @@ function Form({ initial, isNew, copyOf: copiedFrom }: { initial: Item; isNew: bo
             suggestions={suggestions[f.key]}
           />
         ))}
+
+        <BankLinkPicker item={item} onChange={(patch) => setItem({ ...item, ...patch })} />
 
         {cat.id === 'locker' && (
           <LockerContentsEditor

@@ -7,7 +7,8 @@ import { getCategory } from '@/lib/categories'
 import { itemSections, pageCss, type SecretMode } from '@/lib/printing'
 import type { Item } from '@/lib/types'
 import { cn } from '@/lib/utils'
-import { verifyPassword } from '@/lib/vault'
+import { useVault, verifyPassword } from '@/lib/vault'
+import { accountLabel } from '@/components/BankLink'
 
 /** One item on paper: a header with its name, then its details in labelled groups. */
 export function PrintItem({
@@ -23,7 +24,9 @@ export function PrintItem({
   showCategory?: boolean
   only?: string[]
 }) {
-  const sections = itemSections(item, mode, { notes, only })
+  const { items } = useVault()
+  const acc = item.linkedAccountId ? items.find((i) => i.id === item.linkedAccountId && !i.deletedAt) : undefined
+  const sections = itemSections(item, mode, { notes, only, accountName: acc ? accountLabel(acc) : undefined })
   const meta = [showCategory ? getCategory(item.category).name : '', item.subcategory].filter(Boolean).join(' · ')
   const contents = item.lockerContents?.filter((e) => e.item.trim()) ?? []
   return (

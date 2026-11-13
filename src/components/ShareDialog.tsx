@@ -8,14 +8,18 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { itemAsText, type SecretMode } from '@/lib/printing'
 import { copyText } from '@/lib/secure-ui'
 import type { Item } from '@/lib/types'
+import { useVault } from '@/lib/vault'
+import { accountLabel } from '@/components/BankLink'
 
 /** Share one item as text (WhatsApp or any app) or as a one-page PDF. Only this item leaves the app. */
 export function ShareDialog({ item, open, onClose }: { item: Item; open: boolean; onClose: () => void }) {
   const navigate = useNavigate()
   const [mode, setMode] = useState<SecretMode>('hidden')
+  const { items } = useVault()
 
   const asText = async () => {
-    const text = itemAsText(item, mode)
+    const acc = item.linkedAccountId ? items.find((i) => i.id === item.linkedAccountId && !i.deletedAt) : undefined
+    const text = itemAsText(item, mode, acc ? accountLabel(acc) : undefined)
     if (navigator.share) {
       try {
         await navigator.share({ title: item.name, text })

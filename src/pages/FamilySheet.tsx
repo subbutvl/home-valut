@@ -128,7 +128,7 @@ export default function FamilySheet() {
                 cfg.showSecrets ? (
                   <PrintItem key={i.id} item={i} mode={mode} notes={false} />
                 ) : (
-                  <PrintItem key={i.id} item={i} mode="omit" notes={false} only={[...(only(i) ?? []), 'belongsTo']} />
+                  <PrintItem key={i.id} item={i} mode="omit" notes={false} only={[...(only(i) ?? []), 'belongsTo', 'linkedAccount']} />
                 ),
               )}
             </section>

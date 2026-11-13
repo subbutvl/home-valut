@@ -128,7 +128,6 @@ export const CATEGORIES: CategoryDef[] = [
       f('interestActual', 'Interest per payout (from bank)', 'amount'),
       f('payout', 'Payout type', 'select', { options: ['Cumulative', 'Monthly', 'Quarterly'] }),
       f('autoRenew', 'Auto-renew', 'bool'),
-      f('linkedAccount', 'Interest credited to'),
       f('branch', 'Branch', 'text', { remember: true }),
     ],
   },
@@ -235,7 +234,6 @@ export const CATEGORIES: CategoryDef[] = [
       f('startDate', 'Start date', 'date'),
       f('tenure', 'Tenure (months)', 'number'),
       f('outstanding', 'Outstanding amount', 'amount', { reference: 'asOf' }),
-      f('debitAccount', 'EMI debit account'),
       f('pledgedGold', 'Pledged gold details', 'textarea'),
       f('customerCare', 'Customer care number', 'phone'),
       s('loginPassword', 'Login password'),
@@ -472,4 +470,15 @@ export const UNIQUE_FIELDS: Record<string, string[]> = {
   subscription: ['renewal'],
   contact: ['phone', 'phone2', 'email'],
   password: ['userId', 'password', 'pin'],
+}
+
+/** Kinds of item that hang off a bank account, and what the link means for each. */
+export const BANK_LINK_LABEL: Record<string, string> = {
+  card: 'Bank account for this card',
+  deposit: 'Interest paid into',
+  locker: 'Bank account at this branch',
+  loan: 'EMI paid from',
+  investment: 'Linked bank account',
+  utility: 'Auto-pay from',
+  subscription: 'Paid from',
 }
