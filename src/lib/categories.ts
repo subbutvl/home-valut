@@ -191,7 +191,6 @@ export const CATEGORIES: CategoryDef[] = [
       f('agreementDate', 'Agreement date', 'date'),
       f('branchPhone', 'Branch phone', 'phone'),
       f('lastVisited', 'Last visited', 'date'),
-      f('contents', 'Contents (one per line)', 'textarea'),
       s('keyNumber', 'Key number'),
     ],
   },

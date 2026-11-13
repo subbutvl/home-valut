@@ -2,6 +2,8 @@
 // is opened and every hour while it is open. They live in the encrypted settings
 // record, so reading one on the phone marks it read on the laptop too.
 
+import { formatINR } from './categories'
+import { PROBLEM_TEXT, healthReport } from './checks'
 import { shortDate } from './dates'
 import { getSyncMeta } from './db'
 import { allDue } from './reminders'
@@ -71,6 +73,27 @@ export async function refreshNotifications() {
         body: `${when}${amt}`,
       })
   }
+
+  // Each new health-check issue also becomes a Check notification.
+  const h = healthReport(st.items, s)
+  for (const g of h.nominees)
+    for (const i of g.items)
+      add({ key: `check:nominee:${i.id}`, type: 'check', itemId: i.id, title: `${i.name} has no nominee`, body: 'Add a nominee so the family can claim it.' })
+  for (const b of h.bankLimit)
+    add({
+      key: `check:limit:${b.key}:${Math.floor(b.total / 100000)}`,
+      type: 'check',
+      title: `Deposits at ${b.bank} for ${b.person} are ₹${formatINR(b.total)}`,
+      body: `Above the ₹${formatINR(s.bankLimit)} insured limit (DICGC). Figures are the ones you typed.`,
+    })
+  for (const p of h.passwords)
+    add({
+      key: `check:pw:${p.item.id}:${p.label}:${p.problems.join(',')}`,
+      type: 'check',
+      itemId: p.item.id,
+      title: `Weak password on ${p.item.name}`,
+      body: `${p.label}: ${p.problems.map((x) => PROBLEM_TEXT[x]).join(', ')}`,
+    })
 
   const sync = await getSyncMeta()
   if (sync.connected && sync.lastSync && now - sync.lastSync > 7 * DAY)

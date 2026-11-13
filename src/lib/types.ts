@@ -27,18 +27,44 @@ export interface Item {
   done?: Record<string, string>
   /** Days before a date to start reminding; empty = the default for its kind */
   leadDays?: number
+  /** Bank lockers: what is inside */
+  lockerContents?: LockerEntry[]
   createdAt: number
   updatedAt: number
   deletedAt?: number
+}
+
+export interface Medical {
+  bloodGroup?: string
+  allergies?: string
+  medicines?: string
+  conditions?: string
+  doctor?: string
+  healthPolicy?: string
 }
 
 export interface Member {
   id: string
   name: string
   relationship: string
+  dob?: string
+  mobile?: string
+  medical?: Medical
 }
 
-export type NotifType = 'reminder' | 'overdue' | 'sync' | 'backup' | 'app'
+/** One thing kept in a bank locker. */
+export interface LockerEntry {
+  id: string
+  item: string
+  description?: string
+  /** approx. value, reference only */
+  value?: string
+  owner?: string
+  /** a Gold, Property or ID item this refers to */
+  linkId?: string
+}
+
+export type NotifType = 'reminder' | 'overdue' | 'sync' | 'backup' | 'app' | 'check'
 
 export interface Notif {
   id: string
@@ -64,6 +90,10 @@ export interface Settings {
   notifications: Notif[]
   /** Keys of alerts already created (kept 180 days) */
   notifKeys: Record<string, number>
+  /** DICGC deposit insurance limit per person per bank (₹) */
+  bankLimit: number
+  /** Health-check issues the user dismissed */
+  dismissedChecks: string[]
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -75,6 +105,8 @@ export const DEFAULT_SETTINGS: Settings = {
   leadShort: 7,
   notifications: [],
   notifKeys: {},
+  bankLimit: 500000,
+  dismissedChecks: [],
 }
 
 export const BIN_DAYS = 30

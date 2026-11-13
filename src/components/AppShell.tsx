@@ -1,9 +1,10 @@
-import { Bell, CalendarClock, Home, Lock, Plus, Search, Settings } from 'lucide-react'
+import { Bell, CalendarClock, Home, Lock, Plus, Search, Settings, ShieldCheck } from 'lucide-react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { CATEGORY_ICONS } from '@/components/CategoryIcon'
 import { CATEGORY_BY_ID, CATEGORY_GROUPS } from '@/lib/categories'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { cn } from '@/lib/utils'
+import { healthReport } from '@/lib/checks'
 import { unreadCount } from '@/lib/notifications'
 import { lock, useVault } from '@/lib/vault'
 
@@ -19,6 +20,7 @@ const TABS = [
 export function AppShell() {
   const { items, settings } = useVault()
   const unread = unreadCount(settings)
+  const healthCount = healthReport(items, settings).count
   const { pathname } = useLocation()
   const counts: Record<string, number> = {}
   for (const i of items) if (!i.deletedAt) counts[i.category] = (counts[i.category] ?? 0) + 1
@@ -69,6 +71,18 @@ export function AppShell() {
               {unread}
             </span>
           )}
+        </NavLink>
+        <NavLink
+          to="/health"
+          className={({ isActive }) =>
+            cn(
+              'flex h-10 items-center gap-3 rounded-lg px-3 text-[15px] font-medium',
+              isActive ? 'bg-accent text-accent-foreground' : 'hover:bg-muted',
+            )
+          }
+        >
+          <ShieldCheck className="size-[18px]" /> <span className="flex-1">Health check</span>
+          {healthCount > 0 && <span className="text-xs font-semibold text-due">{healthCount}</span>}
         </NavLink>
         {CATEGORY_GROUPS.map((g) => (
           <div key={g.title} className="flex flex-col gap-0.5">

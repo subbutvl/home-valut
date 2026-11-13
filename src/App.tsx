@@ -8,9 +8,11 @@ import { useAutoLock } from '@/lib/secure-ui'
 import { getSyncMeta } from '@/lib/db'
 import { getToken, startSignIn, verifyTokenScopes, type RedirectResult } from '@/lib/drive'
 import { loadSyncState, markConnected, openFromDrive, setConflictHandler, startAutoSync, syncNow } from '@/lib/sync'
-import { getState, init, useVault } from '@/lib/vault'
+import { getState, init, localChanges, useVault } from '@/lib/vault'
 import Backup from '@/pages/Backup'
 import ComingUp from '@/pages/ComingUp'
+import HealthCheck from '@/pages/HealthCheck'
+import Person from '@/pages/Person'
 import Notifications, { NotificationDetail } from '@/pages/Notifications'
 import { addNotification, refreshNotifications } from '@/lib/notifications'
 import AddChoose from '@/pages/AddChoose'
@@ -47,7 +49,18 @@ function Vault({ notice }: { notice?: string }) {
     if (status !== 'unlocked') return
     void syncNow().finally(() => refreshNotifications())
     const t = window.setInterval(() => void refreshNotifications(), 60 * 60_000)
-    return () => window.clearInterval(t)
+    // New dates or checks after an edit show up without waiting for the hourly run.
+    let debounce: number | undefined
+    const onChange = () => {
+      window.clearTimeout(debounce)
+      debounce = window.setTimeout(() => void refreshNotifications(), 3_000)
+    }
+    localChanges.addEventListener('change', onChange)
+    return () => {
+      window.clearInterval(t)
+      window.clearTimeout(debounce)
+      localChanges.removeEventListener('change', onChange)
+    }
   }, [status])
 
   if (status === 'loading') return null
@@ -61,6 +74,8 @@ function Vault({ notice }: { notice?: string }) {
           <Route index element={<Home />} />
           <Route path="search" element={<Search />} />
           <Route path="coming-up" element={<ComingUp />} />
+          <Route path="health" element={<HealthCheck />} />
+          <Route path="person/:id" element={<Person />} />
           <Route path="notifications" element={<Notifications />} />
           <Route path="notifications/:id" element={<NotificationDetail />} />
           <Route path="add" element={<AddChoose />} />

@@ -1,5 +1,6 @@
 import { ChevronRight, Plus } from 'lucide-react'
 import { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Page } from '@/components/AppShell'
 import { Card, PageHeader } from '@/components/common'
@@ -83,10 +84,9 @@ export default function Members() {
         {settings.members.map((m) => {
           const n = usage(m.name)
           return (
-            <button
+            <Link
               key={m.id}
-              type="button"
-              onClick={() => setEditing(m)}
+              to={`/person/${m.id}`}
               className="flex w-full items-center gap-3 border-b border-border/60 px-4 py-3 text-left last:border-b-0 hover:bg-muted/50"
             >
               <span
@@ -103,7 +103,7 @@ export default function Members() {
                 {n} {n === 1 ? 'item' : 'items'}
               </span>
               <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
-            </button>
+            </Link>
           )
         })}
       </Card>
@@ -120,13 +120,16 @@ export default function Members() {
   )
 }
 
-function MemberDialog({ member, usage, onClose }: { member: Member | 'new' | null; usage: number; onClose: () => void }) {
+export function MemberDialog({ member, usage, onClose }: { member: Member | 'new' | null; usage: number; onClose: () => void }) {
   const { settings, items } = useVault()
   const isNew = member === 'new'
   const current = member && member !== 'new' ? member : null
   const [name, setName] = useState(current?.name ?? '')
   const [rel, setRel] = useState(current?.relationship ?? '')
+  const [dob, setDob] = useState(current?.dob ?? '')
+  const [mobile, setMobile] = useState(current?.mobile ?? '')
   const [busy, setBusy] = useState(false)
+  const navigate = useNavigate()
 
   const taken = (n: string) => settings.members.some((x) => x.id !== current?.id && x.name.toLowerCase() === n.toLowerCase())
 
@@ -136,7 +139,7 @@ function MemberDialog({ member, usage, onClose }: { member: Member | 'new' | nul
     if (taken(n)) return toast.error('That name is already there')
     setBusy(true)
     if (isNew) {
-      await updateSettings({ members: [...settings.members, { id: newId(), name: n, relationship: rel }] })
+      await updateSettings({ members: [...settings.members, { id: newId(), name: n, relationship: rel, dob: dob || undefined, mobile: mobile || undefined }] })
     } else if (current) {
       // Renaming updates "Belongs to" and nominees on every item.
       if (n !== current.name)
@@ -148,7 +151,7 @@ function MemberDialog({ member, usage, onClose }: { member: Member | 'new' | nul
               nominees: i.nominees.map((x) => (x.name === current.name ? { ...x, name: n } : x)),
             })
       await updateSettings({
-        members: settings.members.map((x) => (x.id === current.id ? { ...x, name: n, relationship: rel } : x)),
+        members: settings.members.map((x) => (x.id === current.id ? { ...x, name: n, relationship: rel, dob: dob || undefined, mobile: mobile || undefined } : x)),
       })
     }
     setBusy(false)
@@ -161,6 +164,7 @@ function MemberDialog({ member, usage, onClose }: { member: Member | 'new' | nul
     if (!confirm(`Remove ${current.name} from family members?`)) return
     await updateSettings({ members: settings.members.filter((x) => x.id !== current.id) })
     onClose()
+    navigate('/settings/members')
   }
 
   return (
@@ -183,6 +187,20 @@ function MemberDialog({ member, usage, onClose }: { member: Member | 'new' | nul
         <div className="flex flex-col gap-2">
           <span className="text-sm font-semibold">Relation</span>
           <RelationPicker value={rel} onChange={setRel} className="h-12 w-full" />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="mdob" className="text-sm font-semibold">
+              Date of birth
+            </Label>
+            <Input id="mdob" type="date" value={dob} onChange={(e) => setDob(e.target.value)} className="block" />
+          </div>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="mmob" className="text-sm font-semibold">
+              Mobile
+            </Label>
+            <Input id="mmob" type="tel" value={mobile} onChange={(e) => setMobile(e.target.value)} />
+          </div>
         </div>
         <Button size="lg" disabled={!name.trim() || busy} onClick={save}>
           {isNew ? 'Add' : 'Save'}

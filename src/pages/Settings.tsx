@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { setTheme, useTheme } from '@/lib/theme'
+import { healthReport } from '@/lib/checks'
 import { biometricName, biometricSupported, getBioMeta, PASSWORD_EVERY_DAYS } from '@/lib/biometric'
 import {
   changePassword,
@@ -71,6 +72,7 @@ export default function Settings() {
   const [usage, setUsage] = useState('')
   const binCount = items.filter((i) => i.deletedAt).length
   const theme = useTheme()
+  const healthCount = healthReport(items, settings).count
 
   useEffect(() => {
     navigator.storage
@@ -152,6 +154,7 @@ export default function Settings() {
           value={`${settings.members.length} ${settings.members.length === 1 ? 'person' : 'people'}`}
           to="/settings/members"
         />
+        <Row label="Health check" value={healthCount ? `${healthCount} to look at` : 'All good'} to="/health" />
         <Row label="Bin" value={binCount ? `${binCount} ${binCount === 1 ? 'item' : 'items'}` : 'Empty'} to="/settings/bin" />
       </Group>
 

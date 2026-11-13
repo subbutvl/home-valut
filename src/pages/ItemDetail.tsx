@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { CategoryIcon } from '@/components/CategoryIcon'
 import { Card, ValueRow } from '@/components/common'
+import { LockerContentsView } from '@/components/LockerContents'
 import { Button } from '@/components/ui/button'
 import { formatDate, formatINR, getCategory, type FieldDef } from '@/lib/categories'
 import { dueText, isStale, shortDate, nextDue, urgency } from '@/lib/dates'
@@ -10,6 +11,7 @@ import { estimateFd } from '@/lib/estimates'
 import type { Item } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { markDone } from '@/components/Reminders'
+import { PROBLEM_TEXT, passwordIssues } from '@/lib/checks'
 import { dueEntries } from '@/lib/reminders'
 import { moveToBin, newId, saveItem, toggleFavourite, useVault } from '@/lib/vault'
 
@@ -41,7 +43,8 @@ export function ItemDetail({ item, backTo }: { item: Item; backTo: string }) {
   const urg = urgency(due)
   const filled = cat.fields.filter((fd) => item.fields[fd.key])
   const fd = item.category === 'deposit' ? estimateFd(item) : null
-  const { settings } = useVault()
+  const { settings, items } = useVault()
+  const pwIssues = passwordIssues(items).filter((p) => p.item.id === item.id)
   // "Mark done" for bills, premiums, EMIs, subscriptions, once they are within their reminder window.
   const doneEntry = dueEntries(item, settings)
     .filter((e) => e.days <= e.lead)
@@ -176,6 +179,17 @@ export function ItemDetail({ item, backTo }: { item: Item; backTo: string }) {
         </Card>
       )}
 
+      {pwIssues.length > 0 && (
+        <Link to="/health" className="flex flex-col gap-0.5 rounded-xl bg-warn-bg px-4 py-3 text-sm text-warn-fg">
+          <span className="font-semibold">Weak password</span>
+          {pwIssues.map((p) => (
+            <span key={p.label}>
+              {p.label}: {p.problems.map((x) => PROBLEM_TEXT[x]).join(', ')}
+            </span>
+          ))}
+        </Link>
+      )}
+
       {cat.hasNominee && item.nominees.length === 0 && (
         <div className="flex items-center justify-between rounded-xl bg-warn-bg px-4 py-3 text-sm text-warn-fg">
           <span className="font-semibold">No nominee added</span>
@@ -184,6 +198,8 @@ export function ItemDetail({ item, backTo }: { item: Item; backTo: string }) {
           </Link>
         </div>
       )}
+
+      {item.lockerContents?.length ? <LockerContentsView value={item.lockerContents} /> : null}
 
       {(item.notes || item.tags.length > 0) && (
         <Card className="flex flex-col gap-2 p-4">

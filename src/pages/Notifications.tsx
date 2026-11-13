@@ -1,4 +1,4 @@
-import { Bell, CalendarClock, CloudAlert, RefreshCw, TriangleAlert } from 'lucide-react'
+import { Bell, CalendarClock, CloudAlert, RefreshCw, ShieldAlert, TriangleAlert } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { Page } from '@/components/AppShell'
@@ -39,6 +39,7 @@ const ICON: Record<NotifType, typeof Bell> = {
   sync: RefreshCw,
   backup: CloudAlert,
   app: Bell,
+  check: ShieldAlert,
 }
 
 const TABS: { id: string; label: string; match: (n: Notif) => boolean }[] = [
@@ -175,6 +176,11 @@ export function NotificationDetail() {
               Snooze 1 week
             </Button>
           </div>
+        )}
+        {n.type === 'check' && (
+          <Button size="lg" onClick={() => navigate('/health')}>
+            Open health check
+          </Button>
         )}
         {n.type === 'backup' && (
           <Button size="lg" onClick={() => syncNow().then(() => navigate('/settings/backup'))}>

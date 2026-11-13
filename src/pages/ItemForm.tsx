@@ -4,6 +4,7 @@ import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { Card, Chip } from '@/components/common'
 import { FieldInput, SecretInput } from '@/components/FieldInput'
+import { LockerContentsEditor } from '@/components/LockerContents'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -89,6 +90,7 @@ function Form({ initial, isNew }: { initial: Item; isNew: boolean }) {
       tags: tagDraft.trim() ? [...item.tags, tagDraft.trim()] : item.tags,
       nominees: item.nominees.filter((n) => n.name.trim()),
       custom: item.custom.filter((c) => c.label.trim() || c.value.trim()),
+      lockerContents: item.lockerContents?.filter((e) => e.item.trim()),
     })
     toast.success(isNew ? 'Saved' : 'Changes saved')
     navigate(itemPath(saved), { replace: true })
@@ -204,6 +206,13 @@ function Form({ initial, isNew }: { initial: Item; isNew: boolean }) {
             suggestions={suggestions[f.key]}
           />
         ))}
+
+        {cat.id === 'locker' && (
+          <LockerContentsEditor
+            value={item.lockerContents ?? []}
+            onChange={(lockerContents) => setItem({ ...item, lockerContents })}
+          />
+        )}
 
         {cat.hasNominee && (
           <div className="flex flex-col gap-1.5">

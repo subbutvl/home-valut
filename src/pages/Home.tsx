@@ -1,4 +1,4 @@
-import { Lock, Search } from 'lucide-react'
+import { ChevronRight, Lock, Search, ShieldAlert } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Page } from '@/components/AppShell'
 import { CategoryGrid, CategoryIcon } from '@/components/CategoryIcon'
@@ -6,6 +6,7 @@ import { FavStar } from '@/components/common'
 import { DueRow } from '@/components/Reminders'
 import { SyncStatus } from '@/components/SyncStatus'
 import { ThemeToggle } from '@/components/ThemeToggle'
+import { healthReport } from '@/lib/checks'
 import { allDue } from '@/lib/reminders'
 import { NotificationBell } from '@/pages/Notifications'
 import { getCategory, itemPath } from '@/lib/categories'
@@ -26,6 +27,7 @@ export default function Home() {
   const due = allDue(live, settings).filter((e) => e.days <= 90)
   const upcoming = due.slice(0, 3)
   const dueCount = due.length
+  const health = healthReport(live, settings)
   const recent = settings.recentlyViewed.map((id) => byId.get(id)).filter((i): i is Item => !!i)
 
   return (
@@ -55,6 +57,16 @@ export default function Home() {
       >
         <Search className="size-5" /> Search policy, account, vehicle…
       </Link>
+
+      {health.count > 0 && (
+        <Link to="/health" className="flex items-center gap-3 rounded-[14px] bg-warn-bg px-4 py-3.5 text-warn-fg">
+          <ShieldAlert className="size-[22px] shrink-0" />
+          <span className="flex-1 text-[15px] font-semibold">
+            Health check: {health.count} {health.count === 1 ? 'thing needs' : 'things need'} a look
+          </span>
+          <ChevronRight className="size-[18px]" />
+        </Link>
+      )}
 
       {live.length === 0 && (
         <div className="flex flex-col gap-2 rounded-2xl bg-accent px-4 py-4 text-accent-foreground">
