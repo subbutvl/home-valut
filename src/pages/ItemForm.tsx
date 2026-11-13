@@ -2,7 +2,7 @@ import { Check, Plus, X } from 'lucide-react'
 import { useMemo, useState, type FormEvent } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
-import { Card } from '@/components/common'
+import { Card, StickyBar } from '@/components/common'
 import { FieldInput, SecretInput } from '@/components/FieldInput'
 import { AttachmentsEditor } from '@/components/Attachments'
 import { LockerContentsEditor } from '@/components/LockerContents'
@@ -104,13 +104,13 @@ function Form({ initial, isNew }: { initial: Item; isNew: boolean }) {
 
   return (
     <form onSubmit={submit} className="mx-auto flex w-full max-w-2xl flex-col gap-4 px-5 pt-6 pb-32 lg:px-8">
-      <div className="flex min-h-11 items-center justify-between">
+      <StickyBar className="-mt-6 flex min-h-14 items-center justify-between pt-4">
         <button type="button" onClick={() => navigate(-1)} className="text-[15px] font-semibold text-primary">
           Cancel
         </button>
         <h1 className="text-[17px] font-bold">{isNew ? `New ${cat.short === "FD / RD" ? cat.short : cat.short.toLowerCase()}` : `Edit ${cat.short === "FD / RD" ? cat.short : cat.short.toLowerCase()}`}</h1>
         <span className="w-[52px]" />
-      </div>
+      </StickyBar>
 
       <Card className="flex flex-col gap-3.5 p-4">
         <div className="flex flex-col gap-1.5">

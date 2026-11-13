@@ -2,7 +2,7 @@ import { ChevronRight, Lock, Search, ShieldAlert } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Page } from '@/components/AppShell'
 import { CategoryGrid, CategoryIcon } from '@/components/CategoryIcon'
-import { FavStar } from '@/components/common'
+import { FavStar, StickyBar } from '@/components/common'
 import { DueRow } from '@/components/Reminders'
 import { SyncStatus } from '@/components/SyncStatus'
 import { ThemeToggle } from '@/components/ThemeToggle'
@@ -32,6 +32,7 @@ export default function Home() {
 
   return (
     <Page>
+      <StickyBar className="flex flex-col gap-3">
       <header className="flex items-center justify-between">
         <div className="flex flex-col gap-0.5">
           <h1 className="text-[26px] font-bold">HomeVault</h1>
@@ -57,6 +58,7 @@ export default function Home() {
       >
         <Search className="size-5" /> Search policy, account, vehicle…
       </Link>
+      </StickyBar>
 
       {health.count > 0 && (
         <Link to="/health" className="flex items-center gap-3 rounded-[14px] bg-warn-bg px-4 py-3.5 text-warn-fg">

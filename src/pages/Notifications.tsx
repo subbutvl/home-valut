@@ -131,7 +131,7 @@ export function NotificationDetail() {
 
   return (
     <Page>
-      <PageHeader title="" back="/notifications" />
+      <PageHeader title="" stuckTitle={n.title} back="/notifications" />
       <div className="flex flex-col gap-1">
         <p className="text-[13px] text-muted-foreground">{new Date(n.createdAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}</p>
         <h1 className="text-[22px] leading-tight font-bold">{n.title}</h1>

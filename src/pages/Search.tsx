@@ -3,7 +3,7 @@ import { useMemo } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Page } from '@/components/AppShell'
 import { CategoryIcon } from '@/components/CategoryIcon'
-import { EmptyState } from '@/components/common'
+import { EmptyState, StickyBar } from '@/components/common'
 import { CATEGORIES, getCategory, itemPath } from '@/lib/categories'
 import { groupByCategory, search } from '@/lib/search'
 import { cn } from '@/lib/utils'
@@ -48,6 +48,7 @@ export default function Search() {
 
   return (
     <Page>
+      <StickyBar className="flex flex-col gap-3">
       <div className="flex items-center gap-2.5">
         <label htmlFor="q" className="sr-only">
           Search
@@ -109,6 +110,7 @@ export default function Search() {
           ))}
         </select>
       </div>
+      </StickyBar>
 
       {(q.trim() || anyFilter) && (
         <p className="text-[13px] text-muted-foreground">

@@ -163,7 +163,7 @@ export default function CategoryPage() {
         <Page>
           {selected ? (
             <>
-              <PageHeader title="" back={`/c/${catId}`} />
+              <PageHeader title="" stuckTitle={selected.name} back={`/c/${catId}`} />
               <ItemDetail item={selected} backTo={`/c/${catId}`} />
             </>
           ) : (

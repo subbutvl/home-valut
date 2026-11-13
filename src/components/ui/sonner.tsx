@@ -3,7 +3,9 @@ import { Toaster as Sonner, type ToasterProps } from 'sonner'
 const Toaster = (props: ToasterProps) => (
   <Sonner
     theme="system"
-    position="top-center"
+    position="bottom-center"
+    offset={{ bottom: 104 }}
+    mobileOffset={{ bottom: 104 }}
     className="toaster group"
     style={
       {
