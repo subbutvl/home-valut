@@ -2,7 +2,7 @@ import { ChevronRight, ShieldCheck } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { Page } from '@/components/AppShell'
-import { CategoryIcon } from '@/components/CategoryIcon'
+import { ItemLogo } from '@/components/CategoryIcon'
 import { Card, PageHeader } from '@/components/common'
 import { Button } from '@/components/ui/button'
 import { formatINR, itemPath } from '@/lib/categories'
@@ -23,7 +23,7 @@ function Section({ title, hint, children }: { title: string; hint: string; child
 function ItemRow({ item, sub }: { item: Item; sub: string }) {
   return (
     <Link to={itemPath(item)} className="flex items-center gap-3 border-b border-border/60 px-4 py-3 last:border-b-0 hover:bg-muted/50">
-      <CategoryIcon id={item.category} size="sm" />
+      <ItemLogo item={item} />
       <span className="flex min-w-0 flex-1 flex-col">
         <span className="truncate text-[15px] font-semibold">{item.name}</span>
         <span className="truncate text-[13px] text-muted-foreground">{sub}</span>

@@ -20,6 +20,8 @@ import {
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { CATEGORY_BY_ID, CATEGORY_GROUPS } from '@/lib/categories'
+import { logoFor } from '@/lib/logos'
+import type { Item } from '@/lib/types'
 import { cn } from '@/lib/utils'
 
 /** One icon per category, used everywhere in the app. */
@@ -90,5 +92,23 @@ export function CategoryGrid({ hrefFor, counts }: { hrefFor: (id: string) => str
         </section>
       ))}
     </div>
+  )
+}
+
+/** An item's own logo when one is bundled, otherwise its category icon. */
+export function ItemLogo({ item, size = 'sm', className }: { item: Item; size?: 'sm' | 'md'; className?: string }) {
+  const url = logoFor(item)
+  if (!url) return <CategoryIcon id={item.category} size={size} className={className} />
+  return (
+    <span
+      aria-hidden="true"
+      className={cn(
+        'flex shrink-0 items-center justify-center overflow-hidden border bg-white',
+        size === 'sm' ? 'size-8 rounded-lg' : 'size-10 rounded-xl',
+        className,
+      )}
+    >
+      <img src={url} alt="" className="size-full object-contain p-0.5" />
+    </span>
   )
 }

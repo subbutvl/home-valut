@@ -1,8 +1,8 @@
 import { ChevronRight, Search as SearchIcon, X } from 'lucide-react'
-import { useMemo } from 'react'
+
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Page } from '@/components/AppShell'
-import { CategoryIcon } from '@/components/CategoryIcon'
+import { CategoryIcon, ItemLogo } from '@/components/CategoryIcon'
 import { EmptyState, StickyBar } from '@/components/common'
 import { CATEGORIES, getCategory, itemPath } from '@/lib/categories'
 import { groupByCategory, search } from '@/lib/search'
@@ -28,7 +28,6 @@ export default function Search() {
     setParams(next, { replace: true })
   }
 
-  const allTags = useMemo(() => [...new Set(items.flatMap((i) => i.tags))].sort(), [items])
   const filtered = items.filter(
     (i) =>
       !i.deletedAt &&
@@ -95,12 +94,15 @@ export default function Search() {
             <option key={m.id}>{m.name}</option>
           ))}
         </select>
-        <select aria-label="Tag" value={tag} onChange={(e) => setParam('tag', e.target.value)} className={cn(filterClass, tag && 'border-primary text-primary')} style={{ fontSize: 13 }}>
-          <option value="">Tag</option>
-          {allTags.map((t) => (
-            <option key={t}>{t}</option>
-          ))}
-        </select>
+        {tag && (
+          <button
+            type="button"
+            onClick={() => setParam('tag', '')}
+            className="flex h-9 shrink-0 items-center gap-1 rounded-full border border-primary bg-card px-3 text-[13px] font-semibold text-primary"
+          >
+            Tag: {tag} <X className="size-3.5" />
+          </button>
+        )}
         <select aria-label="Category" value={category} onChange={(e) => setParam('category', e.target.value)} className={cn(filterClass, category && 'border-primary text-primary')} style={{ fontSize: 13 }}>
           <option value="">Category</option>
           {CATEGORIES.map((c) => (
@@ -141,6 +143,7 @@ export default function Search() {
                 to={itemPath(h.item)}
                 className="flex items-center gap-3 border-b border-border/60 px-4 py-3.5 last:border-b-0 hover:bg-muted/60"
               >
+                <ItemLogo item={h.item} />
                 <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                   <span className="truncate text-[15px] font-semibold">{h.item.name}</span>
                   {h.match && <span className="truncate text-[13px] text-muted-foreground">{h.match}</span>}

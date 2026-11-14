@@ -1,7 +1,8 @@
 import { ChevronRight, Lock, Search, ShieldAlert } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Page } from '@/components/AppShell'
-import { CategoryGrid, CategoryIcon } from '@/components/CategoryIcon'
+import { CategoryGrid, ItemLogo } from '@/components/CategoryIcon'
+import { ScrollRow } from '@/components/Ticker'
 import { FavStar, StickyBar } from '@/components/common'
 import { DueRow } from '@/components/Reminders'
 import { SyncStatus } from '@/components/SyncStatus'
@@ -98,41 +99,44 @@ export default function Home() {
       )}
 
       {favs.length > 0 && (
-        <section className="flex flex-col gap-2.5">
-          <h2 className="text-[17px] font-bold">Favourites</h2>
-          <div className="flex flex-wrap gap-2">
+        <section className="flex flex-col gap-2">
+          <h2 className="text-[15px] font-bold">Favourites</h2>
+          <ScrollRow label="Favourites">
             {favs.map((i) => (
               <Link
                 key={i.id}
+                role="listitem"
                 to={itemPath(i)}
-                className="flex h-10 items-center gap-1.5 rounded-full border bg-card px-3.5 text-sm font-medium"
+                className="flex h-11 shrink-0 items-center gap-2 rounded-full border bg-card pr-4 pl-1.5 text-sm font-medium whitespace-nowrap"
               >
-                <FavStar on className="size-3.5" />
+                <ItemLogo item={i} size="sm" className="size-8 rounded-full" />
                 {i.name}
+                <FavStar on className="size-3.5" />
               </Link>
             ))}
-          </div>
+          </ScrollRow>
         </section>
       )}
 
       {recent.length > 0 && (
-        <section className="flex flex-col gap-2.5">
-          <h2 className="text-[17px] font-bold">Recently viewed</h2>
-          <div className="overflow-hidden rounded-2xl border bg-card">
+        <section className="flex flex-col gap-2">
+          <h2 className="text-[15px] font-bold">Recently viewed</h2>
+          <ScrollRow label="Recently viewed" auto>
             {recent.map((i) => (
               <Link
                 key={i.id}
+                role="listitem"
                 to={itemPath(i)}
-                className="flex items-center gap-3 border-b border-border/60 px-4 py-3 last:border-b-0"
+                className="flex w-56 shrink-0 items-center gap-2.5 rounded-xl border bg-card px-3 py-2"
               >
-                <CategoryIcon id={i.category} size="sm" />
-                <div className="flex min-w-0 flex-col">
-                  <span className="truncate text-[15px] font-semibold">{i.name}</span>
-                  <span className="truncate text-[13px] text-muted-foreground">{getCategory(i.category).name}</span>
-                </div>
+                <ItemLogo item={i} size="sm" />
+                <span className="flex min-w-0 flex-col">
+                  <span className="truncate text-sm font-semibold">{i.name}</span>
+                  <span className="truncate text-xs text-muted-foreground">{getCategory(i.category).name}</span>
+                </span>
               </Link>
             ))}
-          </div>
+          </ScrollRow>
         </section>
       )}
 

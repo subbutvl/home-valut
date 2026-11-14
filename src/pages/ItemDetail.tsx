@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import { CalendarClock, Check, Printer, Share2, Copy as CopyIcon, Pencil, Star, Trash2 } from 'lucide-react'
+import { CalendarClock, Check, CopyPlus, Printer, Share2, Pencil, Star, Trash2 } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
-import { CategoryIcon } from '@/components/CategoryIcon'
+import { ItemLogo } from '@/components/CategoryIcon'
 import { Card, ValueRow } from '@/components/common'
 import { AttachmentsView } from '@/components/Attachments'
 import { LinkedAccountRow, LinkedToAccount } from '@/components/BankLink'
@@ -69,7 +69,7 @@ export function ItemDetail({ item, backTo }: { item: Item; backTo: string }) {
       <div className="flex items-start gap-2">
         <div className="flex min-w-0 flex-1 flex-col gap-1">
           <p className="flex items-center gap-1.5 text-[13px] text-muted-foreground">
-            <CategoryIcon id={item.category} size="sm" className="size-6 rounded-md [&_svg]:size-3.5" />
+            <ItemLogo item={item} className="size-6 rounded-md [&_svg]:size-3.5" />
             {meta}
           </p>
           <h1 className="text-[26px] leading-tight font-bold break-words">{item.name}</h1>
@@ -90,7 +90,7 @@ export function ItemDetail({ item, backTo }: { item: Item; backTo: string }) {
           title="Duplicate"
           className="flex size-11 shrink-0 items-center justify-center rounded-full hover:bg-muted"
         >
-          <CopyIcon className="size-[20px] text-muted-foreground" />
+          <CopyPlus className="size-[20px] text-muted-foreground" />
         </button>
         <Button asChild variant="outline" className="rounded-full">
           <Link to={`/edit/${item.id}`}>
@@ -254,7 +254,7 @@ export function ItemDetail({ item, backTo }: { item: Item; backTo: string }) {
           <Printer /> Print
         </Button>
         <Button variant="outline" onClick={onDuplicate}>
-          <CopyIcon /> Duplicate
+          <CopyPlus /> Duplicate
         </Button>
         <Button variant="outline" className="text-destructive" onClick={onDelete}>
           <Trash2 /> Delete

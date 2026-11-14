@@ -1,4 +1,4 @@
-import { Copy, Plus } from 'lucide-react'
+import { CopyPlus, Plus } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import { Page } from '@/components/AppShell'
@@ -9,7 +9,7 @@ import type { Item } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { useIsWide } from '@/lib/use-media'
 import { markViewed, useVault } from '@/lib/vault'
-import { CategoryIcon } from '@/components/CategoryIcon'
+import { CategoryIcon, ItemLogo } from '@/components/CategoryIcon'
 import { SubscriptionTotal } from '@/components/Reminders'
 import { ItemDetail } from './ItemDetail'
 
@@ -39,7 +39,12 @@ function Row({ item, active }: { item: Item; active: boolean }) {
       aria-current={active ? 'page' : undefined}
       className="flex min-w-0 flex-1 items-center gap-3 py-3.5 pl-4"
     >
-      <span className={cn('size-2.5 shrink-0 rounded-full', DOT[urg])} aria-hidden="true" />
+      <span className="relative shrink-0">
+        <ItemLogo item={item} />
+        {urg !== 'none' && (
+          <span className={cn('absolute -top-1 -right-1 size-3 rounded-full ring-2 ring-card', DOT[urg])} aria-hidden="true" />
+        )}
+      </span>
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
         <span className="flex items-center gap-1.5 truncate text-[15px] font-semibold">
           {item.name}
@@ -61,7 +66,7 @@ function Row({ item, active }: { item: Item; active: boolean }) {
         title="Duplicate"
         className="flex size-11 shrink-0 items-center justify-center text-muted-foreground hover:text-foreground"
       >
-        <Copy className="size-[18px]" />
+        <CopyPlus className="size-[18px]" />
       </Link>
     </div>
   )

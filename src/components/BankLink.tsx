@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { CategoryIcon } from '@/components/CategoryIcon'
+import { CategoryIcon, ItemLogo } from '@/components/CategoryIcon'
 import { Card } from '@/components/common'
 import { Label } from '@/components/ui/label'
 import { BANK_LINK_LABEL, CATEGORY_BY_ID, CATEGORY_GROUPS, getCategory, itemPath } from '@/lib/categories'
@@ -76,7 +76,7 @@ export function LinkedToAccount({ account }: { account: Item }) {
       </div>
       {linked.map((i) => (
         <Link key={i.id} to={itemPath(i)} className="flex items-center gap-3 border-b border-border/60 px-4 py-3 last:border-b-0 hover:bg-muted/50">
-          <CategoryIcon id={i.category} size="sm" />
+          <ItemLogo item={i} />
           <span className="flex min-w-0 flex-1 flex-col">
             <span className="truncate text-[15px] font-semibold">{i.name}</span>
             <span className="truncate text-[13px] text-muted-foreground">

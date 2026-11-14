@@ -2,7 +2,7 @@ import { HeartPulse, Pencil } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import { Page } from '@/components/AppShell'
-import { CategoryIcon } from '@/components/CategoryIcon'
+import { ItemLogo } from '@/components/CategoryIcon'
 import { Card, EmptyState, PageHeader } from '@/components/common'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -35,7 +35,7 @@ function ItemList({ items, sub }: { items: Item[]; sub: (i: Item) => string }) {
           to={itemPath(i)}
           className="flex items-center gap-3 border-b border-border/60 px-4 py-3 last:border-b-0 hover:bg-muted/50"
         >
-          <CategoryIcon id={i.category} size="sm" />
+          <ItemLogo item={i} />
           <span className="flex min-w-0 flex-1 flex-col">
             <span className="truncate text-[15px] font-semibold">{i.name}</span>
             <span className="truncate text-[13px] text-muted-foreground">{sub(i)}</span>
