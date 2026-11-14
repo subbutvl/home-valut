@@ -6,7 +6,7 @@ import { copyText, useReveal } from '@/lib/secure-ui'
 import { cn } from '@/lib/utils'
 
 export function Card({ className, children }: { className?: string; children: ReactNode }) {
-  return <div className={cn('rounded-2xl border bg-card text-card-foreground', className)}>{children}</div>
+  return <div className={cn('rounded-[22px] border bg-card text-card-foreground shadow-soft', className)}>{children}</div>
 }
 
 /** True once the page has been scrolled (pages scroll the whole window). */
@@ -28,8 +28,8 @@ export function StickyBar({ children, className }: { children: ReactNode; classN
     <>
       <div
         className={cn(
-          'sticky top-0 z-30 -mx-5 -mt-3 bg-background/95 px-5 pt-3 pb-2 backdrop-blur transition-shadow lg:-mx-8 lg:px-8',
-          stuck && 'shadow-[0_1px_0_var(--border)]',
+          'sticky top-0 z-30 -mx-5 -mt-3 px-5 pt-3 pb-2 transition-[background-color,box-shadow] lg:-mx-8 lg:px-8',
+          stuck && 'bg-background/75 shadow-[0_1px_0_var(--border)] backdrop-blur-xl',
           className,
         )}
       >
@@ -59,8 +59,8 @@ export function PageHeader({
     <>
       <header
         className={cn(
-          'sticky top-0 z-30 -mx-5 -mt-3 flex min-h-14 items-center gap-1 bg-background/95 px-5 pt-3 pb-2 backdrop-blur transition-shadow lg:-mx-8 lg:px-8',
-          stuck && 'shadow-[0_1px_0_var(--border)]',
+          'sticky top-0 z-30 -mx-5 -mt-3 flex min-h-14 items-center gap-1 px-5 pt-3 pb-2 transition-[background-color,box-shadow] lg:-mx-8 lg:px-8',
+          stuck && 'bg-background/75 shadow-[0_1px_0_var(--border)] backdrop-blur-xl',
         )}
       >
         {back && (

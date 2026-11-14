@@ -44,8 +44,8 @@ export default defineConfig({
         name: 'HomeVault',
         short_name: 'HomeVault',
         description: 'Private, encrypted vault for your assets, IDs, policies and renewals.',
-        theme_color: '#1D4ED8',
-        background_color: '#F4F5F7',
+        theme_color: '#3D6B37',
+        background_color: '#F4F2EE',
         display: 'standalone',
         start_url: '.',
         scope: '.',
@@ -57,10 +57,12 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,webmanifest}'],
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,webmanifest,woff2}'],
         navigateFallback: 'index.html',
       },
     }),
   ],
+  // Never inline fonts as data: URLs (the CSP only allows fonts from the app itself).
+  build: { assetsInlineLimit: (file) => (/\.(woff2?|ttf|otf)$/.test(file) ? false : undefined) },
   resolve: { alias: { '@': path.resolve(import.meta.dirname, './src') } },
 })

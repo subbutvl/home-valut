@@ -28,7 +28,7 @@ export function AppShell() {
 
   return (
     <div className="min-h-dvh lg:flex">
-      <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col gap-1 overflow-y-auto border-r bg-card px-3 py-5 lg:flex [&_a]:shrink-0 [&>*]:shrink-0">
+      <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col gap-1 overflow-y-auto border-r bg-card/60 px-3 py-5 backdrop-blur-xl lg:flex [&_a]:shrink-0 [&>*]:shrink-0">
         <div className="flex items-center justify-between px-3 pb-3">
           <span className="flex-1 text-xl font-bold">HomeVault</span>
           <ThemeToggle className="size-9 border-0 bg-transparent hover:bg-muted [&_svg]:size-4" />
@@ -133,28 +133,32 @@ export function AppShell() {
         ))}
       </aside>
 
-      <div className={cn('min-w-0 flex-1', !hideBar && 'pb-24 lg:pb-0')}>
+      <div className={cn('min-w-0 flex-1', !hideBar && 'pb-28 lg:pb-0')}>
         <Outlet />
       </div>
 
       {!hideBar && (
         <nav
           aria-label="Main"
-          className="pb-safe fixed inset-x-0 bottom-0 z-20 flex justify-around border-t bg-card/95 pt-2 backdrop-blur lg:hidden"
+          className="fixed inset-x-4 z-20 flex h-[68px] items-center justify-around rounded-[24px] border bg-nav px-1 shadow-[0_16px_40px_rgba(0,0,0,0.18)] backdrop-blur-xl lg:hidden"
+          style={{ bottom: 'calc(14px + env(safe-area-inset-bottom))' }}
         >
           {TABS.map((t) => (
             <NavLink
               key={t.to}
               to={t.to}
               end={t.to === '/'}
+              aria-label={t.label}
               className={({ isActive }) =>
                 cn(
-                  'flex h-14 w-[72px] flex-col items-center gap-1 pt-1 text-[11px] font-semibold',
-                  isActive ? 'text-primary' : 'text-muted-foreground',
+                  'flex h-[52px] w-[60px] flex-col items-center justify-center gap-0.5 rounded-[18px] text-[10px] font-semibold transition-colors',
+                  isActive
+                    ? 'bg-brand-ink text-brand dark:bg-brand dark:text-brand-ink'
+                    : 'text-muted-foreground hover:text-foreground',
                 )
               }
             >
-              <t.icon className="size-6" strokeWidth={1.8} />
+              <t.icon className="size-[22px]" strokeWidth={1.8} />
               {t.label}
             </NavLink>
           ))}

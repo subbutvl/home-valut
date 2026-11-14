@@ -52,7 +52,7 @@ export function CategoryIcon({ id, className, size = 'md' }: { id: string; class
       aria-hidden="true"
       className={cn(
         'flex shrink-0 items-center justify-center bg-accent text-accent-foreground',
-        size === 'sm' ? 'size-8 rounded-lg' : 'size-10 rounded-xl',
+        size === 'sm' ? 'size-8 rounded-[10px]' : 'size-10 rounded-[12px]',
         className,
       )}
     >
@@ -67,8 +67,8 @@ export function CategoryGrid({ hrefFor, counts }: { hrefFor: (id: string) => str
     <div className="flex flex-col gap-5">
       {CATEGORY_GROUPS.map((g) => (
         <section key={g.title} className="flex flex-col gap-2.5">
-          <h3 className="px-1 text-xs font-semibold tracking-wide text-muted-foreground uppercase">{g.title}</h3>
-          <div className="grid grid-cols-3 gap-2.5 sm:grid-cols-4 lg:grid-cols-5">
+          <h3 className="px-1 text-xs font-semibold tracking-[0.14em] text-muted-foreground uppercase">{g.title}</h3>
+          <div className={cn('grid gap-2.5', counts ? 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4' : 'grid-cols-3 sm:grid-cols-4 lg:grid-cols-5')}>
             {g.ids.map((id) => {
               const c = CATEGORY_BY_ID[id]
               const n = counts?.[id] ?? 0
@@ -76,15 +76,17 @@ export function CategoryGrid({ hrefFor, counts }: { hrefFor: (id: string) => str
                 <Link
                   key={id}
                   to={hrefFor(id)}
-                  className="flex min-h-[104px] flex-col gap-2 rounded-[14px] border bg-card p-3 hover:border-primary/40"
+                  className="flex min-h-[104px] flex-col justify-between gap-3 rounded-[20px] border bg-card p-3.5 shadow-soft transition-colors hover:border-primary/40"
                 >
-                  <CategoryIcon id={id} />
-                  <span className="text-[13px] leading-tight font-semibold">{counts ? c.name : c.short}</span>
-                  {counts && (
-                    <span className="mt-auto text-xs text-muted-foreground">
-                      {n} {n === 1 ? 'item' : 'items'}
-                    </span>
-                  )}
+                  <span className="flex items-start justify-between gap-2">
+                    <CategoryIcon id={id} />
+                    {counts && (
+                      <span className="num text-[26px] leading-none font-bold" aria-label={`${n} ${n === 1 ? 'item' : 'items'}`}>
+                        {n}
+                      </span>
+                    )}
+                  </span>
+                  <span className="text-[14px] leading-tight font-medium text-foreground/80">{counts ? c.name : c.short}</span>
                 </Link>
               )
             })}

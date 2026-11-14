@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button'
 import { formatDate, formatINR, getCategory, type FieldDef } from '@/lib/categories'
 import { dueText, isStale, shortDate, nextDue, urgency } from '@/lib/dates'
 import { estimateFd } from '@/lib/estimates'
+import { glowFor, gradientFor, keyFigure, keyIdentifier } from '@/lib/palette'
 import type { Item } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { markDone } from '@/components/Reminders'
@@ -55,7 +56,11 @@ export function ItemDetail({ item, backTo }: { item: Item; backTo: string }) {
     .filter((e) => e.days <= e.lead)
     .sort((a, b) => a.days - b.days)[0]
 
-  const meta = [cat.name, item.subcategory, item.belongsTo.join(', ')].filter(Boolean).join(' · ')
+  const meta = [item.subcategory || cat.short, item.belongsTo.length > 1 ? `Joint · ${item.belongsTo.join(', ')}` : item.belongsTo[0]]
+    .filter(Boolean)
+    .join(' · ')
+  const figure = keyFigure(item)
+  const ident = keyIdentifier(item)
 
   const onDelete = async () => {
     await moveToBin(item.id)
@@ -66,38 +71,60 @@ export function ItemDetail({ item, backTo }: { item: Item; backTo: string }) {
 
   return (
     <div className="flex flex-col gap-3.5">
-      <div className="flex items-start gap-2">
-        <div className="flex min-w-0 flex-1 flex-col gap-1">
-          <p className="flex items-center gap-1.5 text-[13px] text-muted-foreground">
-            <ItemLogo item={item} className="size-6 rounded-md [&_svg]:size-3.5" />
-            {meta}
-          </p>
-          <h1 className="text-[26px] leading-tight font-bold break-words">{item.name}</h1>
-        </div>
+      <div className="flex items-center justify-end gap-2">
         <button
           type="button"
           onClick={() => toggleFavourite(item.id)}
           aria-label={item.favourite ? 'Remove from favourites' : 'Add to favourites'}
           aria-pressed={!!item.favourite}
-          className="flex size-11 shrink-0 items-center justify-center rounded-full hover:bg-muted"
+          className="flex size-11 shrink-0 items-center justify-center rounded-[14px] border bg-card"
         >
-          <Star className={cn('size-[22px]', item.favourite ? 'fill-amber-400 stroke-amber-600' : 'stroke-muted-foreground')} />
+          <Star className={cn('size-[20px]', item.favourite ? 'fill-amber-400 stroke-amber-600' : 'stroke-muted-foreground')} />
         </button>
         <button
           type="button"
           onClick={onDuplicate}
           aria-label="Duplicate: make a new one like this"
           title="Duplicate"
-          className="flex size-11 shrink-0 items-center justify-center rounded-full hover:bg-muted"
+          className="flex size-11 shrink-0 items-center justify-center rounded-[14px] border bg-card"
         >
-          <CopyPlus className="size-[20px] text-muted-foreground" />
+          <CopyPlus className="size-[19px]" />
         </button>
-        <Button asChild variant="outline" className="rounded-full">
+        <Button asChild className="h-11 rounded-[14px] px-5">
           <Link to={`/edit/${item.id}`}>
             <Pencil /> Edit
           </Link>
         </Button>
       </div>
+
+      {/* Hero card: the item's colour, logo, name, people and its one key figure. */}
+      <section
+        className="relative flex flex-col gap-5 overflow-hidden rounded-[28px] p-5 text-white"
+        style={{ backgroundImage: gradientFor(item.category), boxShadow: glowFor(item.category) }}
+      >
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -top-12 -right-12 size-48 rounded-full"
+          style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.18), rgba(255,255,255,0) 70%)' }}
+        />
+        <div className="flex items-center gap-3">
+          <ItemLogo item={item} size="md" className="size-12 rounded-[14px] border-0 bg-white text-[#1B3C7A] [&_svg]:text-[#1B3C7A]" />
+          <div className="flex min-w-0 flex-col">
+            <h1 className="text-[24px] leading-tight font-bold break-words">{item.name}</h1>
+            <span className="text-[13px] text-white/75">{meta}</span>
+          </div>
+        </div>
+        {figure && (
+          <div className="flex flex-col gap-0.5">
+            <span className="text-xs text-white/75">
+              {figure.label}
+              {item.category === 'bank' && isStale(item.fields.balanceAsOf) ? ' · over 90 days old' : ''}
+            </span>
+            <span className="num text-[40px] leading-none font-bold">{figure.value}</span>
+          </div>
+        )}
+        {ident && <span className="font-mono text-[16px] tracking-[0.12em] text-white/90">{ident}</span>}
+      </section>
 
       {due && (urg === 'overdue' || urg === 'soon') && (
         <div
@@ -117,19 +144,6 @@ export function ItemDetail({ item, backTo }: { item: Item; backTo: string }) {
         <Button size="lg" onClick={() => markDone(doneEntry)}>
           <Check /> Mark done{doneEntry.repeatMonths ? ' · move to next cycle' : ''}
         </Button>
-      )}
-
-      {item.category === 'bank' && item.fields.balance && (
-        <Card className="flex flex-col gap-1 p-4">
-          <span className="text-xs text-muted-foreground">Current balance</span>
-          <span className={cn('text-[22px] font-bold', isStale(item.fields.balanceAsOf) && 'text-muted-foreground')}>
-            ₹{formatINR(item.fields.balance)}
-          </span>
-          <span className="text-xs text-muted-foreground">
-            {item.fields.balanceAsOf ? `as of ${formatDate(item.fields.balanceAsOf)} · ` : ''}typed by you · reference only
-            {isStale(item.fields.balanceAsOf) && ' · over 90 days old'}
-          </span>
-        </Card>
       )}
 
       {fd && (

@@ -1,56 +1,75 @@
 @import "tailwindcss";
+@import "@fontsource-variable/inter";
+@import "@fontsource-variable/space-grotesk";
+@import "@fontsource/jetbrains-mono/500.css";
 
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
+/* Moss (Night vault) theme. Light: pale stone with sage glow. Dark: near-black with moss glow. */
 :root {
-  --radius: 0.875rem;
-  --background: #f4f5f7;
-  --foreground: #111827;
-  --card: #ffffff;
-  --card-foreground: #111827;
+  --radius: 1rem;
+  --background: #f4f2ee;
+  --glow-1: #dcead3;
+  --glow-2: #dde7f3;
+  --foreground: #14161d;
+  --card: rgba(255, 255, 255, 0.78);
+  --card-foreground: #14161d;
   --popover: #ffffff;
-  --popover-foreground: #111827;
-  --primary: #1d4ed8;
+  --popover-foreground: #14161d;
+  --primary: #2f5a2a;
   --primary-foreground: #ffffff;
-  --secondary: #f3f4f6;
-  --secondary-foreground: #111827;
-  --muted: #f3f4f6;
-  --muted-foreground: #4b5563;
-  --accent: #e8eefc;
-  --accent-foreground: #1d4ed8;
-  --destructive: #b42318;
-  --border: #e5e7eb;
-  --input: #d1d5db;
-  --ring: #1d4ed8;
-  --warn-bg: #fef3e2;
-  --warn-fg: #7c2d12;
-  --due: #b45309;
-  --ok: #15803d;
+  --secondary: #ece9e2;
+  --secondary-foreground: #14161d;
+  --muted: #ece9e2;
+  --muted-foreground: #5e6473;
+  --accent: rgba(156, 196, 142, 0.26);
+  --accent-foreground: #2f5a2a;
+  --destructive: #c2412d;
+  --border: rgba(20, 22, 29, 0.09);
+  --input: rgba(20, 22, 29, 0.16);
+  --ring: #3d6b37;
+  --warn-bg: #f6ebd3;
+  --warn-fg: #6b4410;
+  --due: #a15c07;
+  --ok: #1f7a4c;
+  /* Brand moss: badges, active tab, hero accents */
+  --brand: #9cc48e;
+  --brand-deep: #3d6b37;
+  --brand-ink: #14161d;
+  --nav: rgba(255, 255, 255, 0.9);
+  --shadow: 0 6px 18px rgba(20, 22, 29, 0.06);
 }
 
 :root[data-theme="dark"] {
-  --background: #0b0f17;
-  --foreground: #f3f4f6;
-  --card: #151a24;
-  --card-foreground: #f3f4f6;
-  --popover: #151a24;
-  --popover-foreground: #f3f4f6;
-  --primary: #4f7cf7;
-  --primary-foreground: #ffffff;
-  --secondary: #1f2633;
-  --secondary-foreground: #f3f4f6;
-  --muted: #1f2633;
-  --muted-foreground: #a3acbb;
-  --accent: #1c2a4d;
-  --accent-foreground: #9db6ff;
-  --destructive: #f26b5e;
-  --border: #262e3c;
-  --input: #343d4d;
-  --ring: #4f7cf7;
-  --warn-bg: #3a2610;
-  --warn-fg: #fbd38d;
-  --due: #f59e0b;
-  --ok: #4ade80;
+  --background: #0b0d12;
+  --glow-1: #17291a;
+  --glow-2: #10263a;
+  --foreground: #edeff4;
+  --card: rgba(255, 255, 255, 0.045);
+  --card-foreground: #edeff4;
+  --popover: #161920;
+  --popover-foreground: #edeff4;
+  --primary: #8dba7f;
+  --primary-foreground: #0b0d12;
+  --secondary: rgba(255, 255, 255, 0.07);
+  --secondary-foreground: #edeff4;
+  --muted: rgba(255, 255, 255, 0.07);
+  --muted-foreground: #9097a6;
+  --accent: rgba(141, 186, 127, 0.14);
+  --accent-foreground: #aed69f;
+  --destructive: #ff7a6b;
+  --border: rgba(255, 255, 255, 0.09);
+  --input: rgba(255, 255, 255, 0.16);
+  --ring: #8dba7f;
+  --warn-bg: rgba(242, 180, 90, 0.12);
+  --warn-fg: #f6cf8e;
+  --due: #f2b45a;
+  --ok: #7ee2a8;
+  --brand: #8dba7f;
+  --brand-deep: #3d6b37;
+  --brand-ink: #0b0d12;
+  --nav: rgba(22, 24, 32, 0.88);
+  --shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
 }
 
 @theme inline {
@@ -80,8 +99,14 @@
   --color-warn-fg: var(--warn-fg);
   --color-due: var(--due);
   --color-ok: var(--ok);
-  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --color-brand: var(--brand);
+  --color-brand-deep: var(--brand-deep);
+  --color-brand-ink: var(--brand-ink);
+  --color-nav: var(--nav);
+  --font-sans: "Inter Variable", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  --font-display: "Space Grotesk Variable", "Inter Variable", -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --shadow-soft: var(--shadow);
 }
 
 @layer base {
@@ -95,6 +120,22 @@
   body {
     @apply bg-background text-foreground font-sans antialiased;
     overscroll-behavior-y: none;
+    background-image:
+      radial-gradient(120% 60% at 90% -10%, var(--glow-1) 0%, transparent 60%),
+      radial-gradient(90% 50% at -15% 25%, var(--glow-2) 0%, transparent 60%);
+    background-attachment: fixed;
+    background-repeat: no-repeat;
+    min-height: 100dvh;
+  }
+  h1, h2 {
+    font-family: var(--font-display);
+    letter-spacing: -0.02em;
+  }
+  /* Amounts and counts line up */
+  .num {
+    font-family: var(--font-display);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
   }
   input, textarea, select {
     /* 16px stops iOS Safari zooming into fields */

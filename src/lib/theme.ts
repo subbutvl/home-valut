@@ -25,7 +25,7 @@ function apply() {
   document.documentElement.style.colorScheme = mode
   document.querySelectorAll('meta[name="theme-color"]').forEach((m) => {
     m.removeAttribute('media')
-    m.setAttribute('content', mode === 'dark' ? '#0B0F17' : '#F4F5F7')
+    m.setAttribute('content', mode === 'dark' ? '#0B0D12' : '#F4F2EE')
   })
   listeners.forEach((l) => l())
 }

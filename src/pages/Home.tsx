@@ -3,14 +3,15 @@ import { Link } from 'react-router-dom'
 import { Page } from '@/components/AppShell'
 import { CategoryGrid, ItemLogo } from '@/components/CategoryIcon'
 import { ScrollRow } from '@/components/Ticker'
-import { FavStar, StickyBar } from '@/components/common'
-import { DueRow } from '@/components/Reminders'
+import { StickyBar } from '@/components/common'
+import { NextUp } from '@/components/NextUp'
 import { SyncStatus } from '@/components/SyncStatus'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { healthReport } from '@/lib/checks'
 import { allDue } from '@/lib/reminders'
 import { NotificationBell } from '@/pages/Notifications'
 import { getCategory, itemPath } from '@/lib/categories'
+import { glowFor, gradientFor } from '@/lib/palette'
 import type { Item } from '@/lib/types'
 import { lock, useVault } from '@/lib/vault'
 
@@ -35,9 +36,18 @@ export default function Home() {
     <Page>
       <StickyBar className="flex flex-col gap-3">
       <header className="flex items-center justify-between">
-        <div className="flex flex-col gap-0.5">
-          <h1 className="text-[26px] font-bold">HomeVault</h1>
-          <SyncStatus />
+        <div className="flex items-center gap-3">
+          <span
+            aria-hidden="true"
+            className="flex size-11 items-center justify-center rounded-[14px] text-brand-ink shadow-[0_8px_20px_rgba(61,107,55,0.3)]"
+            style={{ background: 'linear-gradient(145deg, var(--brand), var(--brand-deep))' }}
+          >
+            <Lock className="size-[22px]" strokeWidth={2} />
+          </span>
+          <div className="flex flex-col">
+            <h1 className="text-[22px] leading-tight font-bold">HomeVault</h1>
+            <SyncStatus className="text-xs" />
+          </div>
         </div>
         <div className="flex gap-2">
           <ThemeToggle />
@@ -46,7 +56,7 @@ export default function Home() {
             type="button"
             onClick={lock}
             aria-label="Lock now"
-            className="flex size-11 items-center justify-center rounded-full border bg-card lg:hidden"
+            className="flex size-11 items-center justify-center rounded-[14px] border bg-card lg:hidden"
           >
             <Lock className="size-5" />
           </button>
@@ -55,9 +65,9 @@ export default function Home() {
 
       <Link
         to="/search"
-        className="flex h-13 items-center gap-2.5 rounded-[14px] border bg-card px-4 text-base text-muted-foreground"
+        className="flex h-13 items-center gap-2.5 rounded-[16px] border bg-card px-4 text-base text-muted-foreground shadow-soft"
       >
-        <Search className="size-5" /> Search policy, account, vehicle…
+        <Search className="size-5" /> Search the vault
       </Link>
       </StickyBar>
 
@@ -84,34 +94,22 @@ export default function Home() {
         </div>
       )}
 
-      {upcoming.length > 0 && (
-        <section className="overflow-hidden rounded-2xl border bg-card">
-          <div className="flex items-center justify-between px-4 pt-3.5 pb-1">
-            <h2 className="text-[17px] font-bold">Coming up</h2>
-            <Link to="/coming-up" className="text-sm font-semibold text-primary">
-              See all {dueCount}
-            </Link>
-          </div>
-          {upcoming.map((e) => (
-            <DueRow key={`${e.item.id}:${e.field.key}`} e={e} compact />
-          ))}
-        </section>
-      )}
+      {upcoming.length > 0 && <NextUp first={upcoming[0]} rest={upcoming.slice(1)} total={dueCount} />}
 
       {favs.length > 0 && (
         <section className="flex flex-col gap-2">
-          <h2 className="text-[15px] font-bold">Favourites</h2>
+          <h2 className="text-xs font-semibold tracking-[0.14em] text-muted-foreground uppercase">Favourites</h2>
           <ScrollRow label="Favourites">
             {favs.map((i) => (
               <Link
                 key={i.id}
                 role="listitem"
                 to={itemPath(i)}
-                className="flex h-11 shrink-0 items-center gap-2 rounded-full border bg-card pr-4 pl-1.5 text-sm font-medium whitespace-nowrap"
+                className="flex h-[104px] w-32 shrink-0 flex-col justify-between rounded-[20px] p-3 text-white"
+                style={{ backgroundImage: gradientFor(i.category), boxShadow: `${glowFor(i.category)}, inset 0 1px 0 rgba(255,255,255,0.2)` }}
               >
-                <ItemLogo item={i} size="sm" className="size-8 rounded-full" />
-                {i.name}
-                <FavStar on className="size-3.5" />
+                <ItemLogo item={i} size="sm" className="size-8 rounded-[10px] border-0 bg-white/90 text-[#1B3C7A]" />
+                <span className="line-clamp-2 text-[13px] leading-tight font-semibold">{i.name}</span>
               </Link>
             ))}
           </ScrollRow>
@@ -120,14 +118,14 @@ export default function Home() {
 
       {recent.length > 0 && (
         <section className="flex flex-col gap-2">
-          <h2 className="text-[15px] font-bold">Recently viewed</h2>
+          <h2 className="text-xs font-semibold tracking-[0.14em] text-muted-foreground uppercase">Recently viewed</h2>
           <ScrollRow label="Recently viewed" auto>
             {recent.map((i) => (
               <Link
                 key={i.id}
                 role="listitem"
                 to={itemPath(i)}
-                className="flex w-56 shrink-0 items-center gap-2.5 rounded-xl border bg-card px-3 py-2"
+                className="flex w-56 shrink-0 items-center gap-2.5 rounded-[16px] border bg-card px-3 py-2.5"
               >
                 <ItemLogo item={i} size="sm" />
                 <span className="flex min-w-0 flex-col">
@@ -141,7 +139,7 @@ export default function Home() {
       )}
 
       <section className="flex flex-col gap-2.5">
-        <h2 className="text-[17px] font-bold">Categories</h2>
+        <h2 className="sr-only">Categories</h2>
         <CategoryGrid hrefFor={(id) => `/c/${id}`} counts={counts} />
       </section>
     </Page>

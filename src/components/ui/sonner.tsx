@@ -5,7 +5,7 @@ const Toaster = (props: ToasterProps) => (
     theme="system"
     position="bottom-center"
     offset={{ bottom: 104 }}
-    mobileOffset={{ bottom: 104 }}
+    mobileOffset={{ bottom: 100 }}
     className="toaster group"
     style={
       {
