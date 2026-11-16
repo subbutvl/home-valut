@@ -7,8 +7,8 @@ import { Card, PageHeader } from '@/components/common'
 import { AccountGroup, PageStyle, PrintItem, SecretModePicker } from '@/components/PrintDoc'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
-import { CATEGORY_BY_ID, CATEGORY_GROUPS } from '@/lib/categories'
-import { groupLinked, printedOn, type SecretMode } from '@/lib/printing'
+import { CATEGORY_BY_ID, CATEGORY_GROUPS, formatDate, formatINR } from '@/lib/categories'
+import { groupLinked, moneySummary, printedOn, type SecretMode } from '@/lib/printing'
 import { cn } from '@/lib/utils'
 import { useVault } from '@/lib/vault'
 
@@ -25,12 +25,15 @@ export default function Print() {
   const [notes, setNotes] = useState(true)
   const [blanks, setBlanks] = useState(true)
   const [custom, setCustom] = useState(false)
+  const [summary, setSummary] = useState(true)
   const tags = [...new Set(live.flatMap((i) => i.tags))].sort()
 
   const chosen = live
     .filter((i) => picked.includes(i.category))
     .filter((i) => !person || i.belongsTo.includes(person))
     .filter((i) => !tag || i.tags.includes(tag))
+  // Money summary for the cover: everything matching the person/tag filter.
+  const money = moneySummary(live.filter((i) => (!person || i.belongsTo.includes(person)) && (!tag || i.tags.includes(tag))))
   // Cards, FDs, lockers… linked to a printed bank account print inside its group.
   const { linkedTo, pulled } = groupLinked(chosen)
   const sections = usedCats
@@ -104,6 +107,13 @@ export default function Print() {
             </span>
             <Switch checked={blanks} onCheckedChange={setBlanks} />
           </label>
+          <label className="flex items-center justify-between gap-3 text-[15px]">
+            <span>
+              Money summary on the first page
+              <span className="block text-xs text-muted-foreground">Savings, FDs, bonds and approx. interest</span>
+            </span>
+            <Switch checked={summary} onCheckedChange={setSummary} />
+          </label>
           <label className="flex items-center justify-between text-[15px]">
             Include custom fields
             <Switch checked={custom} onCheckedChange={setCustom} />
@@ -127,6 +137,46 @@ export default function Print() {
               {person ? ` · only ${person}` : ''}
               {tag ? ` · tag “${tag}”` : ''}
             </p>
+            {summary && money && (
+              <div className="pd-summary">
+                <h2 style={{ marginTop: '14pt' }}>Summary · approx.</h2>
+                <table className="pd-sum">
+                  <thead>
+                    <tr>
+                      <th scope="col">Holding</th>
+                      <th scope="col">Items</th>
+                      <th scope="col">Total ₹</th>
+                      <th scope="col">Avg. rate</th>
+                      <th scope="col">Interest / year ₹</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {money.rows.map((r) => (
+                      <tr key={r.label}>
+                        <td>{r.label}</td>
+                        <td>{r.count}</td>
+                        <td>{formatINR(Math.round(r.total))}</td>
+                        <td>{r.avgRate ? `${r.avgRate.toFixed(2)}%` : '—'}</td>
+                        <td>{r.yearly ? formatINR(Math.round(r.yearly)) : '—'}</td>
+                      </tr>
+                    ))}
+                    <tr className="pd-sum-total">
+                      <td>Total</td>
+                      <td>{money.rows.reduce((s, r) => s + r.count, 0)}</td>
+                      <td>{formatINR(Math.round(money.total))}</td>
+                      <td>{money.avgRate ? `${money.avgRate.toFixed(2)}%` : '—'}</td>
+                      <td>{money.yearly ? formatINR(Math.round(money.yearly)) : '—'}</td>
+                    </tr>
+                  </tbody>
+                </table>
+                <p className="pd-meta" style={{ marginTop: '5pt' }}>
+                  Reference only, from the figures typed in the app: interest is amount × rate for a year (before tax),
+                  about ₹{formatINR(Math.round(money.yearly / 12))} a month; the average rate is weighted by amount and
+                  counts only items with a rate. Balances are as typed
+                  {money.oldestBalance ? `, the oldest as of ${formatDate(money.oldestBalance)}` : ''}.
+                </p>
+              </div>
+            )}
             <p className="pd-meta" style={{ marginTop: '6pt' }}>
               Secrets: {mode === 'hidden' ? 'hidden' : mode === 'shown' ? 'SHOWN. Keep this paper safe.' : 'left out'}
               . Amounts are as typed in the app (reference only).

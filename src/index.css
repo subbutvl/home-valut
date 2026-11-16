@@ -212,6 +212,11 @@
 .print-doc .pd-grid dt { color: #555; font-size: 9pt; }
 .print-doc .pd-grid dd { font-size: 10.5pt; overflow-wrap: anywhere; }
 .print-doc .pd-cover { break-after: page; }
+.print-doc .pd-sum { width: 100%; border-collapse: collapse; margin-top: 4pt; font-size: 10pt; }
+.print-doc .pd-sum th { text-align: right; font-size: 8.5pt; font-weight: 700; color: #444; border-bottom: 1pt solid #111; padding: 4pt 6pt; }
+.print-doc .pd-sum td { text-align: right; padding: 5pt 6pt; border-bottom: 0.5pt solid #ccc; font-variant-numeric: tabular-nums; }
+.print-doc .pd-sum th:first-child, .print-doc .pd-sum td:first-child { text-align: left; }
+.print-doc .pd-sum .pd-sum-total td { font-weight: 700; border-top: 1pt solid #111; border-bottom: 0; }
 /* New page in print (each bank account); a dashed line in the on-screen preview. */
 @media print { .print-doc .pd-newpage { break-before: page; } }
 @media screen { .print-doc .pd-newpage { border-top: 1px dashed #bbb; padding-top: 14px; margin-top: 6px; } }

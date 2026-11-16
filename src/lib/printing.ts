@@ -176,3 +176,60 @@ export function groupLinked(items: Item[]): { linkedTo: Map<string, Item[]>; pul
     list.sort((a, b) => ORDER.indexOf(a.category) - ORDER.indexOf(b.category) || a.name.localeCompare(b.name))
   return { linkedTo, pulled }
 }
+
+const amt = (v?: string) => Number(String(v ?? '').replace(/[,₹\s]/g, '')) || 0
+
+export interface MoneyRow {
+  label: string
+  count: number
+  total: number
+  /** amount-weighted average rate, % p.a. (only rows with a rate count) */
+  avgRate?: number
+  /** approx. interest a year from amount × rate */
+  yearly?: number
+}
+
+export interface MoneySummary {
+  rows: MoneyRow[]
+  total: number
+  yearly: number
+  avgRate?: number
+  oldestBalance?: string
+}
+
+/**
+ * Reference totals for the first printed page: savings balances (as typed),
+ * FDs/RDs and bonds/investments, with approx. yearly interest from amount × rate.
+ * Nothing here is an account statement; the page labels it approx.
+ */
+export function moneySummary(items: Item[]): MoneySummary | null {
+  const live = items.filter((i) => !i.deletedAt)
+  const sum = (list: Item[], key: string, label: string): MoneyRow | null => {
+    if (!list.length) return null
+    let total = 0
+    let rated = 0
+    let yearly = 0
+    for (const i of list) {
+      const a = amt(i.fields[key])
+      total += a
+      const r = amt(i.fields.rate)
+      if (a && r) {
+        rated += a
+        yearly += (a * r) / 100
+      }
+    }
+    return { label, count: list.length, total, avgRate: rated ? (yearly / rated) * 100 : undefined, yearly: yearly || undefined }
+  }
+  const banks = live.filter((i) => i.category === 'bank')
+  const rows = [
+    sum(banks, 'balance', 'Savings and current accounts (balance as typed)'),
+    sum(live.filter((i) => i.category === 'deposit'), 'amount', 'Fixed and recurring deposits'),
+    sum(live.filter((i) => i.category === 'investment'), 'invested', 'Bonds and investments (amount invested)'),
+  ].filter((r): r is MoneyRow => !!r)
+  if (!rows.length) return null
+  const total = rows.reduce((s, r) => s + r.total, 0)
+  const yearly = rows.reduce((s, r) => s + (r.yearly ?? 0), 0)
+  const rated = rows.reduce((s, r) => s + (r.avgRate ? r.total : 0), 0)
+  const dates = banks.map((b) => b.fields.balanceAsOf).filter(Boolean).sort()
+  return { rows, total, yearly, avgRate: rated && yearly ? (yearly / rated) * 100 : undefined, oldestBalance: dates[0] }
+}
