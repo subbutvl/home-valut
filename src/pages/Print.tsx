@@ -23,6 +23,8 @@ export default function Print() {
   const [tag, setTag] = useState('')
   const [mode, setMode] = useState<SecretMode>('hidden')
   const [notes, setNotes] = useState(true)
+  const [blanks, setBlanks] = useState(true)
+  const [custom, setCustom] = useState(false)
   const tags = [...new Set(live.flatMap((i) => i.tags))].sort()
 
   const chosen = live
@@ -90,6 +92,17 @@ export default function Print() {
             </select>
           </div>
           <SecretModePicker value={mode} onChange={setMode} />
+          <label className="flex items-center justify-between gap-3 text-[15px]">
+            <span>
+              Show empty fields
+              <span className="block text-xs text-muted-foreground">As lines to fill in by hand, e.g. PINs</span>
+            </span>
+            <Switch checked={blanks} onCheckedChange={setBlanks} />
+          </label>
+          <label className="flex items-center justify-between text-[15px]">
+            Include custom fields
+            <Switch checked={custom} onCheckedChange={setCustom} />
+          </label>
           <label className="flex items-center justify-between text-[15px]">
             Include notes
             <Switch checked={notes} onCheckedChange={setNotes} />
@@ -119,7 +132,7 @@ export default function Print() {
                 {s.cat.name} · {s.items.length}
               </h2>
               {s.items.map((i) => (
-                <PrintItem key={i.id} item={i} mode={mode} notes={notes} />
+                <PrintItem key={i.id} item={i} mode={mode} notes={notes} blanks={blanks} custom={custom} />
               ))}
             </section>
           ))}

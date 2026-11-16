@@ -17,16 +17,20 @@ export function PrintItem({
   notes = true,
   showCategory,
   only,
+  blanks,
+  custom,
 }: {
   item: Item
   mode: SecretMode
   notes?: boolean
   showCategory?: boolean
   only?: string[]
+  blanks?: boolean
+  custom?: boolean
 }) {
   const { items } = useVault()
   const acc = item.linkedAccountId ? items.find((i) => i.id === item.linkedAccountId && !i.deletedAt) : undefined
-  const sections = itemSections(item, mode, { notes, only, accountName: acc ? accountLabel(acc) : undefined })
+  const sections = itemSections(item, mode, { notes, only, blanks, custom, accountName: acc ? accountLabel(acc) : undefined })
   const meta = [showCategory ? getCategory(item.category).name : '', item.subcategory].filter(Boolean).join(' · ')
   const contents = item.lockerContents?.filter((e) => e.item.trim()) ?? []
   return (
@@ -45,7 +49,9 @@ export function PrintItem({
                   {s.lines.map((l, i) => (
                     <tr key={i}>
                       {l.label && <th scope="row">{l.label}</th>}
-                      <td colSpan={l.label ? 1 : 2}>{l.value}</td>
+                      <td colSpan={l.label ? 1 : 2} className={l.blank ? 'blank' : undefined}>
+                        {l.value}
+                      </td>
                     </tr>
                   ))}
                 </tbody>

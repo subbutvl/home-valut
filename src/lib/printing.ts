@@ -9,6 +9,8 @@ export type SecretMode = 'hidden' | 'shown' | 'omit'
 export interface Line {
   label: string
   value: string
+  /** Empty field, printed as a line to fill in by hand */
+  blank?: boolean
 }
 
 function show(fd: FieldDef, v: string): string {
@@ -92,7 +94,7 @@ const PEOPLE_KEYS = /^(holders|owners|owner|insured|borrowers|cardHolder|person|
 export function itemSections(
   item: Item,
   mode: SecretMode,
-  opts: { notes?: boolean; only?: string[]; accountName?: string } = {},
+  opts: { notes?: boolean; only?: string[]; accountName?: string; blanks?: boolean; custom?: boolean } = {},
 ): Section[] {
   const cat = getCategory(item.category)
   const groups: Record<string, Line[]> = {
@@ -108,12 +110,16 @@ export function itemSections(
   for (const fd of cat.fields) {
     const v = item.fields[fd.key]
     // App-only switches are not printed.
-    if (!v || !allow(fd.key) || fd.key === 'onFamilySheet') continue
+    if (!allow(fd.key) || fd.key === 'onFamilySheet') continue
+    // With blanks on, empty fields print as a line to write on (blank: true).
+    if (!v && !opts.blanks) continue
     if (fd.secret) {
-      if (mode !== 'omit') groups.secret.push({ label: fd.label, value: mode === 'shown' ? v : '••••••' })
+      if (!v || mode === 'omit') {
+        if (opts.blanks) groups.secret.push({ label: fd.label, value: '', blank: true })
+      } else groups.secret.push({ label: fd.label, value: mode === 'shown' ? v : '••••••' })
       continue
     }
-    const line = { label: fd.label, value: show(fd, v) }
+    const line: Line = v ? { label: fd.label, value: show(fd, v) } : { label: fd.label, value: '', blank: true }
     if (PEOPLE_KEYS.test(fd.key)) groups.people.push(line)
     else if (fd.main) groups.key.push(line)
     else if (['date', 'amount', 'expiry'].includes(fd.type) || fd.key === 'rate' || fd.key === 'payout' || fd.key === 'frequency') groups.money.push(line)
@@ -124,12 +130,14 @@ export function itemSections(
     groups.key.push({ label: BANK_LINK_LABEL[item.category] ?? 'Bank account', value: opts.accountName })
   if (!opts.only || opts.only.includes('belongsTo'))
     if (item.belongsTo.length) groups.people.unshift({ label: item.belongsTo.length > 1 ? 'Belongs to (joint)' : 'Belongs to', value: item.belongsTo.join(', ') })
+  if (opts.blanks && allow('nominee') && !item.nominees.length && getCategory(item.category).hasNominee)
+    groups.people.push({ label: 'Nominee', value: '', blank: true })
   if (allow('nominee') && item.nominees.length)
     groups.people.push({
       label: item.nominees.length > 1 ? 'Nominees' : 'Nominee',
       value: item.nominees.map((n) => `${n.name}${n.share ? ` (${n.share}%)` : ''}`).join(', '),
     })
-  if (!opts.only)
+  if (!opts.only && opts.custom !== false)
     for (const c of item.custom) {
       if (!c.value) continue
       if (c.secret) {
