@@ -32,8 +32,8 @@ export default function Print() {
     .filter((i) => picked.includes(i.category))
     .filter((i) => !person || i.belongsTo.includes(person))
     .filter((i) => !tag || i.tags.includes(tag))
-  // Money summary for the cover: everything matching the person/tag filter.
-  const money = moneySummary(live.filter((i) => (!person || i.belongsTo.includes(person)) && (!tag || i.tags.includes(tag))))
+  // Money summary for the cover: only the ticked categories (bank, FD, bonds), matching the person/tag filter.
+  const money = moneySummary(chosen)
   // Cards, FDs, lockers… linked to a printed bank account print inside its group.
   const { linkedTo, pulled } = groupLinked(chosen)
   const sections = usedCats
@@ -110,7 +110,7 @@ export default function Print() {
           <label className="flex items-center justify-between gap-3 text-[15px]">
             <span>
               Money summary on the first page
-              <span className="block text-xs text-muted-foreground">Savings, FDs, bonds and approx. interest</span>
+              <span className="block text-xs text-muted-foreground">Only for ticked bank accounts, FDs and bonds</span>
             </span>
             <Switch checked={summary} onCheckedChange={setSummary} />
           </label>
