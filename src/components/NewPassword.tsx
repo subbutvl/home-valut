@@ -67,7 +67,7 @@ export function NewPassword({
             {strength ?? ''}
           </span>
         </div>
-        <p className="text-xs text-muted-foreground">At least 12 characters. Four random words are easy to remember.</p>
+        <p className="text-xs text-muted-foreground">At least 12 characters. Six random words are strong and still easy to remember.</p>
         <button
           type="button"
           onClick={() => {

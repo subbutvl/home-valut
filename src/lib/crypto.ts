@@ -128,10 +128,16 @@ export function passwordStrength(pw: string): Strength {
   if (pw.length < 12 || COMMON.has(pw.toLowerCase())) return 'weak'
   const words = pw.split(/[\s\-_.]+/).filter((w) => w.length >= 3)
   const classes = [/[a-z]/, /[A-Z]/, /[0-9]/, /[^A-Za-z0-9]/].filter((r) => r.test(pw)).length
-  if (words.length >= 4 || pw.length >= 20 || (pw.length >= 14 && classes >= 3)) return 'strong'
+  // A vault file copied from Drive or a backup can be guessed offline, where the
+  // unlock lockout does not apply, so "strong" needs real length.
+  // Dictionary words are far easier to guess than their letter count suggests,
+  // so a passphrase is judged by how many words it has, not by its length.
+  if (words.length >= 3) return words.length >= 6 ? 'strong' : 'good'
+  if (pw.length >= 24 || (pw.length >= 16 && classes >= 3)) return 'strong'
   return 'good'
 }
 
+// 256 words, so each random byte picks one word with no bias (8 bits per word).
 const WORDS = [
   'mango', 'river', 'blue', 'tiger', 'lotus', 'monsoon', 'pepper', 'temple', 'banyan', 'coconut', 'kite', 'saffron',
   'harbour', 'jasmine', 'falcon', 'marble', 'thunder', 'silver', 'canvas', 'lantern', 'meadow', 'orbit', 'pebble',
@@ -139,11 +145,31 @@ const WORDS = [
   'desert', 'ember', 'forest', 'garden', 'hill', 'island', 'jungle', 'koel', 'lemon', 'mint', 'neem', 'ocean',
   'parrot', 'rain', 'sand', 'tea', 'umbrella', 'violet', 'wave', 'cedar', 'copper', 'delta', 'eagle', 'ginger',
   'honey', 'ivory', 'jade', 'kettle', 'lime', 'maple',
+  'acorn', 'almond', 'amber', 'apple', 'apricot', 'arrow', 'atlas', 'autumn', 'badge', 'bagel', 'banana', 'barley',
+  'basket', 'beacon', 'berry', 'bicycle', 'biscuit', 'blanket', 'blossom', 'bottle', 'breeze', 'brick', 'bridge',
+  'bronze', 'bucket', 'butter', 'button', 'cabin', 'cactus', 'camel', 'candle', 'carrot', 'castle', 'cherry',
+  'chess', 'cinnamon', 'circle', 'citrus', 'cliff', 'cloud', 'clover', 'comet', 'compass', 'coral', 'cotton',
+  'crane', 'crayon', 'cricket', 'crystal', 'cumin', 'curry', 'daisy', 'dawn', 'diamond', 'dolphin', 'donkey',
+  'dragonfly', 'drum', 'dune', 'echo', 'elephant', 'emerald', 'engine', 'fern', 'festival', 'fiddle', 'finch',
+  'flame', 'flute', 'fossil', 'fountain', 'galaxy', 'gecko', 'glacier', 'globe', 'granite', 'grape', 'guava',
+  'guitar', 'hammer', 'harvest', 'hazel', 'helmet', 'heron', 'hippo', 'horizon', 'iceberg', 'igloo', 'indigo',
+  'jacket', 'jelly', 'journey', 'kangaroo', 'kayak', 'kiwi', 'ladder', 'lagoon', 'lantana', 'leopard', 'lighthouse',
+  'lizard', 'llama', 'magnet', 'marigold', 'meteor', 'mirror', 'mustard', 'needle', 'nectar', 'nutmeg', 'oasis',
+  'olive', 'onion', 'orange', 'orchid', 'otter', 'paddle', 'panda', 'papaya', 'peacock', 'pearl', 'pencil', 'penguin',
+  'pillow', 'pine', 'planet', 'plum', 'pocket', 'pond', 'puzzle', 'rabbit', 'radish', 'rainbow', 'raven', 'ribbon',
+  'ripple', 'robin', 'rose', 'ruby', 'saddle', 'sail', 'sapphire', 'scarf', 'shadow', 'shell', 'sketch', 'sparrow',
+  'spinach', 'sponge', 'spring', 'squirrel', 'star', 'stone', 'sugar', 'summit', 'sunrise', 'swan', 'teapot',
+  'thistle', 'timber', 'tomato', 'topaz', 'tortoise', 'tractor', 'trumpet', 'tulip', 'turmeric', 'turtle', 'valley',
+  'vanilla', 'village', 'violin', 'volcano', 'wagon', 'whistle', 'willow', 'window', 'winter', 'wolf', 'yak',
+  'yogurt', 'zinnia', 'abacus', 'beetle', 'chimney', 'dynamo', 'falafel', 'giraffe', 'hornet', 'lychee', 'pistachio',
+  'raisin',
 ]
+if (WORDS.length !== 256 || new Set(WORDS).size !== 256) throw new Error('wordlist')
 
-/** Suggest a 4-word passphrase (64 words → 24 bits; plus a 2-digit number ≈ 30 bits). */
+/** Suggest a 6-word passphrase (256 words → 48 bits; plus a 2-digit number ≈ 54 bits). */
 export function suggestPassphrase(): string {
-  const b = randomBytes(5)
-  const words = Array.from(b.slice(0, 4), (x) => WORDS[x & 63])
-  return `${words.join('-')}-${10 + (b[4] % 90)}`
+  const b = randomBytes(6)
+  const words = Array.from(b, (x) => WORDS[x])
+  const n = crypto.getRandomValues(new Uint32Array(1))[0] % 90
+  return `${words.join('-')}-${10 + n}`
 }
