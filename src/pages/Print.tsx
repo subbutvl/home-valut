@@ -169,6 +169,35 @@ export default function Print() {
                     </tr>
                   </tbody>
                 </table>
+                {money.rows.map((r) => (
+                  <div key={r.label} className="pd-overview">
+                    <h3>{r.label}</h3>
+                    <table className="pd-sum">
+                      <thead>
+                        <tr>
+                          <th scope="col">Name</th>
+                          <th scope="col">Bank / issuer · held by</th>
+                          <th scope="col">{r.label.startsWith('Savings') ? 'Balance as of' : 'Matures'}</th>
+                          <th scope="col">Amount ₹</th>
+                          {r.label.startsWith('Savings') ? null : <th scope="col">Rate</th>}
+                          {r.label.startsWith('Savings') ? null : <th scope="col">Interest / year ₹</th>}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {r.lines.map((l, idx) => (
+                          <tr key={idx}>
+                            <td>{l.name}</td>
+                            <td>{l.where || '—'}</td>
+                            <td>{l.date ? formatDate(l.date) : '—'}</td>
+                            <td>{l.amount ? formatINR(Math.round(l.amount)) : '—'}</td>
+                            {r.label.startsWith('Savings') ? null : <td>{l.rate ? `${l.rate}%` : '—'}</td>}
+                            {r.label.startsWith('Savings') ? null : <td>{l.yearly ? formatINR(Math.round(l.yearly)) : '—'}</td>}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ))}
                 <p className="pd-meta" style={{ marginTop: '5pt' }}>
                   Reference only, from the figures typed in the app: interest is amount × rate for a year (before tax),
                   about ₹{formatINR(Math.round(money.yearly / 12))} a month; the average rate is weighted by amount and

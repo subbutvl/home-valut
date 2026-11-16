@@ -216,6 +216,10 @@
 .print-doc .pd-sum th { text-align: right; font-size: 8.5pt; font-weight: 700; color: #444; border-bottom: 1pt solid #111; padding: 4pt 6pt; }
 .print-doc .pd-sum td { text-align: right; padding: 5pt 6pt; border-bottom: 0.5pt solid #ccc; font-variant-numeric: tabular-nums; }
 .print-doc .pd-sum th:first-child, .print-doc .pd-sum td:first-child { text-align: left; }
+.print-doc .pd-overview { margin-top: 10pt; break-inside: avoid; }
+.print-doc .pd-overview h3 { font-family: var(--font-display); font-size: 10.5pt; font-weight: 700; margin: 0 0 2pt; }
+.print-doc .pd-overview .pd-sum { font-size: 9pt; }
+.print-doc .pd-overview .pd-sum td:nth-child(2), .print-doc .pd-overview .pd-sum th:nth-child(2) { text-align: left; color: #444; }
 .print-doc .pd-sum .pd-sum-total td { font-weight: 700; border-top: 1pt solid #111; border-bottom: 0; }
 /* New page in print (each bank account); a dashed line in the on-screen preview. */
 @media print { .print-doc .pd-newpage { break-before: page; } }

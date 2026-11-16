@@ -179,8 +179,19 @@ export function groupLinked(items: Item[]): { linkedTo: Map<string, Item[]>; pul
 
 const amt = (v?: string) => Number(String(v ?? '').replace(/[,₹\s]/g, '')) || 0
 
+export interface MoneyLine {
+  name: string
+  where: string
+  amount: number
+  rate?: number
+  yearly?: number
+  date?: string
+}
+
 export interface MoneyRow {
   label: string
+  /** one line per item, largest first */
+  lines: MoneyLine[]
   count: number
   total: number
   /** amount-weighted average rate, % p.a. (only rows with a rate count) */
@@ -204,27 +215,38 @@ export interface MoneySummary {
  */
 export function moneySummary(items: Item[]): MoneySummary | null {
   const live = items.filter((i) => !i.deletedAt)
-  const sum = (list: Item[], key: string, label: string): MoneyRow | null => {
+  const sum = (list: Item[], key: string, label: string, whereKey: string, dateKey?: string): MoneyRow | null => {
     if (!list.length) return null
     let total = 0
     let rated = 0
     let yearly = 0
+    const lines: MoneyLine[] = []
     for (const i of list) {
       const a = amt(i.fields[key])
       total += a
       const r = amt(i.fields.rate)
-      if (a && r) {
+      const y = a && r ? (a * r) / 100 : undefined
+      if (y) {
         rated += a
-        yearly += (a * r) / 100
+        yearly += y
       }
+      lines.push({
+        name: i.name,
+        where: [i.fields[whereKey], i.belongsTo.join(', ')].filter(Boolean).join(' · '),
+        amount: a,
+        rate: r || undefined,
+        yearly: y,
+        date: dateKey ? i.fields[dateKey] : undefined,
+      })
     }
-    return { label, count: list.length, total, avgRate: rated ? (yearly / rated) * 100 : undefined, yearly: yearly || undefined }
+    lines.sort((x, y2) => y2.amount - x.amount)
+    return { label, lines, count: list.length, total, avgRate: rated ? (yearly / rated) * 100 : undefined, yearly: yearly || undefined }
   }
   const banks = live.filter((i) => i.category === 'bank')
   const rows = [
-    sum(banks, 'balance', 'Savings and current accounts (balance as typed)'),
-    sum(live.filter((i) => i.category === 'deposit'), 'amount', 'Fixed and recurring deposits'),
-    sum(live.filter((i) => i.category === 'investment'), 'invested', 'Bonds and investments (amount invested)'),
+    sum(banks, 'balance', 'Savings and current accounts (balance as typed)', 'bank', 'balanceAsOf'),
+    sum(live.filter((i) => i.category === 'deposit'), 'amount', 'Fixed and recurring deposits', 'bank', 'maturityDate'),
+    sum(live.filter((i) => i.category === 'investment'), 'invested', 'Bonds and investments (amount invested)', 'issuer', 'maturityDate'),
   ].filter((r): r is MoneyRow => !!r)
   if (!rows.length) return null
   const total = rows.reduce((s, r) => s + r.total, 0)
