@@ -212,6 +212,9 @@
 .print-doc .pd-grid dt { color: #555; font-size: 9pt; }
 .print-doc .pd-grid dd { font-size: 10.5pt; overflow-wrap: anywhere; }
 .print-doc .pd-cover { break-after: page; }
+/* New page in print (each bank account); a dashed line in the on-screen preview. */
+@media print { .print-doc .pd-newpage { break-before: page; } }
+@media screen { .print-doc .pd-newpage { border-top: 1px dashed #bbb; padding-top: 14px; margin-top: 6px; } }
 /* A bank account with its linked cards, FDs, lockers… */
 .print-doc .pd-group { border: 1.5pt solid #3d6b37; border-radius: 6pt; padding: 7pt 7pt 0; margin: 0 0 14pt; }
 .print-doc .pd-group > .pd-item, .print-doc .pd-group > div > .pd-item { margin-bottom: 7pt; }
