@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useLayoutEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -49,7 +49,7 @@ export function PrintItem({
                   {s.lines.map((l, i) => (
                     <tr key={i}>
                       {l.label && <th scope="row">{l.label}</th>}
-                      <td colSpan={l.label ? 1 : 2} className={l.blank ? 'blank' : undefined}>
+                      <td colSpan={l.label ? 1 : 2} className={l.blank ? 'blank' : l.label ? 'fit' : undefined}>
                         {l.value}
                       </td>
                     </tr>
@@ -79,8 +79,48 @@ export function PrintItem({
   )
 }
 
+/**
+ * Keep each printed value on one line: shrink its text (down to 7pt) until it
+ * fits its column. Runs on screen and again when the print layout is applied,
+ * since the paper width differs from the preview. Notes still wrap.
+ */
+function fitValues() {
+  document.querySelectorAll<HTMLElement>('.print-doc .pd-rows td.fit').forEach((td) => {
+    td.style.whiteSpace = 'nowrap'
+    td.style.fontSize = ''
+    let pt = 10.5
+    while (td.scrollWidth > td.clientWidth + 1 && pt > 7) {
+      pt -= 0.5
+      td.style.fontSize = `${pt}pt`
+    }
+    // Still too long at the smallest size (e.g. a full address): let it wrap.
+    if (td.scrollWidth > td.clientWidth + 1) td.style.whiteSpace = 'normal'
+  })
+}
+
+export function useFitPrintValues() {
+  useLayoutEffect(() => {
+    fitValues()
+  })
+  useEffect(() => {
+    const mq = window.matchMedia('print')
+    const onChange = () => requestAnimationFrame(fitValues)
+    mq.addEventListener('change', onChange)
+    window.addEventListener('beforeprint', fitValues)
+    window.addEventListener('afterprint', fitValues)
+    window.addEventListener('resize', fitValues)
+    return () => {
+      mq.removeEventListener('change', onChange)
+      window.removeEventListener('beforeprint', fitValues)
+      window.removeEventListener('afterprint', fitValues)
+      window.removeEventListener('resize', fitValues)
+    }
+  }, [])
+}
+
 /** The @page rules (A4, footer with date and page numbers). */
 export function PageStyle() {
+  useFitPrintValues()
   return <style>{pageCss()}</style>
 }
 
