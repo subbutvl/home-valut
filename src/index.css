@@ -216,7 +216,9 @@
 @media print { .print-doc .pd-newpage { break-before: page; } }
 @media screen { .print-doc .pd-newpage { border-top: 1px dashed #bbb; padding-top: 14px; margin-top: 6px; } }
 /* A bank account with its linked cards, FDs, lockers… */
-.print-doc .pd-group { border: 1.5pt solid #3d6b37; border-radius: 6pt; padding: 7pt 7pt 0; margin: 0 0 14pt; }
+.print-doc .pd-group { margin: 0 0 14pt; }
+/* The green frame is a screen-only guide; printed pages (and PDFs) show no frame. */
+@media screen { .print-doc .pd-group { border: 1.5pt solid #3d6b37; border-radius: 6pt; padding: 7pt 7pt 0; } }
 .print-doc .pd-group > .pd-item, .print-doc .pd-group > div > .pd-item { margin-bottom: 7pt; }
 .print-doc .pd-group-title { font-size: 8.5pt; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #3d6b37; margin: 2pt 0 5pt; break-after: avoid; }
 @media screen {

@@ -136,7 +136,7 @@ export default function Print() {
             // Each bank account starts a new page; so does whatever follows them.
             <section key={s.cat.id} className={si > 0 && sections[si - 1].cat.id === 'bank' ? 'pd-newpage' : undefined}>
               <h2>
-                {s.cat.name} · {s.items.length}
+                {s.cat.name}
               </h2>
               {s.items.map((i, ii) => (
                 <div key={i.id} className={s.cat.id === 'bank' && ii > 0 ? 'pd-newpage' : undefined}>
