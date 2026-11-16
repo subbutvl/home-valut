@@ -84,6 +84,7 @@ export const CATEGORIES: CategoryDef[] = [
       s('transactionPassword', 'Transaction password'),
       s('mpin', 'MPIN'),
       s('upiPin', 'UPI PIN'),
+      s('atmPin', 'ATM PIN'),
     ],
   },
   {
