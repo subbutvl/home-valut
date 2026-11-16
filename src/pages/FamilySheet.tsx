@@ -3,13 +3,13 @@ import { useState } from 'react'
 import { Page } from '@/components/AppShell'
 import { CategoryIcon } from '@/components/CategoryIcon'
 import { Card, PageHeader } from '@/components/common'
-import { PageStyle, PrintItem } from '@/components/PrintDoc'
+import { AccountGroup, PageStyle, PrintItem } from '@/components/PrintDoc'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { CATEGORY_BY_ID } from '@/lib/categories'
-import { printedOn } from '@/lib/printing'
+import { groupLinked, printedOn } from '@/lib/printing'
 import type { FamilySheetConfig, Item } from '@/lib/types'
 import { cn } from '@/lib/utils'
 import { updateSettings, useVault } from '@/lib/vault'
@@ -44,9 +44,11 @@ export default function FamilySheet() {
   const live = items.filter((i) => !i.deletedAt)
   const mode = cfg.showSecrets ? 'shown' : 'omit'
 
+  const onSheet = live.filter((i) => cfg.sections.includes(i.category) && SHEET_FIELDS[i.category])
+  const { linkedTo, pulled } = groupLinked(onSheet)
   const blocks = cfg.sections
     .filter((s) => SHEET_FIELDS[s])
-    .map((id) => ({ id, items: live.filter((i) => i.category === id).sort((a, b) => a.name.localeCompare(b.name)) }))
+    .map((id) => ({ id, items: onSheet.filter((i) => i.category === id && !pulled.has(i.id)).sort((a, b) => a.name.localeCompare(b.name)) }))
     .filter((b) => b.items.length)
   const contacts = cfg.sections.includes('contacts') ? live.filter((i) => i.category === 'contact' && i.fields.onFamilySheet === 'yes') : []
   const medical = cfg.sections.includes('medical')
@@ -124,13 +126,20 @@ export default function FamilySheet() {
           {blocks.map((b) => (
             <section key={b.id}>
               <h2>{CATEGORY_BY_ID[b.id].name}</h2>
-              {b.items.map((i) =>
-                cfg.showSecrets ? (
-                  <PrintItem key={i.id} item={i} mode={mode} notes={false} />
-                ) : (
-                  <PrintItem key={i.id} item={i} mode="omit" notes={false} only={[...(only(i) ?? []), 'belongsTo', 'linkedAccount']} />
-                ),
-              )}
+              {b.items.map((i) => (
+                <AccountGroup
+                  key={i.id}
+                  account={i}
+                  linked={linkedTo.get(i.id) ?? []}
+                  render={(x, inGroup) =>
+                    cfg.showSecrets ? (
+                      <PrintItem item={x} mode={mode} notes={false} showCategory={inGroup} />
+                    ) : (
+                      <PrintItem item={x} mode="omit" notes={false} showCategory={inGroup} only={[...(only(x) ?? []), 'belongsTo', 'linkedAccount']} />
+                    )
+                  }
+                />
+              ))}
             </section>
           ))}
 

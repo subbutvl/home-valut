@@ -157,3 +157,22 @@ export function itemSections(
   if (opts.notes && item.notes) out.push({ title: 'Notes', lines: [{ label: '', value: item.notes }] })
   return out
 }
+
+/**
+ * For printing, items linked to a bank account that is also being printed go
+ * with that account (one group), and are taken out of their own category.
+ */
+export function groupLinked(items: Item[]): { linkedTo: Map<string, Item[]>; pulled: Set<string> } {
+  const banks = new Set(items.filter((i) => i.category === 'bank').map((i) => i.id))
+  const linkedTo = new Map<string, Item[]>()
+  const pulled = new Set<string>()
+  for (const i of items) {
+    if (i.category === 'bank' || !i.linkedAccountId || !banks.has(i.linkedAccountId)) continue
+    linkedTo.set(i.linkedAccountId, [...(linkedTo.get(i.linkedAccountId) ?? []), i])
+    pulled.add(i.id)
+  }
+  const ORDER = ['card', 'deposit', 'locker', 'loan', 'investment', 'utility', 'subscription']
+  for (const list of linkedTo.values())
+    list.sort((a, b) => ORDER.indexOf(a.category) - ORDER.indexOf(b.category) || a.name.localeCompare(b.name))
+  return { linkedTo, pulled }
+}

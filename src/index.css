@@ -212,6 +212,10 @@
 .print-doc .pd-grid dt { color: #555; font-size: 9pt; }
 .print-doc .pd-grid dd { font-size: 10.5pt; overflow-wrap: anywhere; }
 .print-doc .pd-cover { break-after: page; }
+/* A bank account with its linked cards, FDs, lockers… */
+.print-doc .pd-group { border: 1.5pt solid #3d6b37; border-radius: 6pt; padding: 7pt 7pt 0; margin: 0 0 14pt; }
+.print-doc .pd-group > .pd-item, .print-doc .pd-group > div > .pd-item { margin-bottom: 7pt; }
+.print-doc .pd-group-title { font-size: 8.5pt; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #3d6b37; margin: 2pt 0 5pt; break-after: avoid; }
 @media screen {
   .print-doc { padding: 24px; border-radius: 12px; box-shadow: 0 1px 4px rgb(0 0 0 / 0.12); }
   .print-doc .pd-sections, .print-doc .pd-grid { grid-template-columns: minmax(0, 1fr); }

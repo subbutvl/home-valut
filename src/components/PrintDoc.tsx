@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useState, type ReactNode } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -30,7 +30,7 @@ export function PrintItem({
 }) {
   const { items } = useVault()
   const acc = item.linkedAccountId ? items.find((i) => i.id === item.linkedAccountId && !i.deletedAt) : undefined
-  const sections = itemSections(item, mode, { notes, only, blanks, custom, accountName: acc ? accountLabel(acc) : undefined })
+  const sections = itemSections(item, mode, { notes, only, blanks, custom, accountName: acc && !showCategory ? accountLabel(acc) : undefined })
   const meta = [showCategory ? getCategory(item.category).name : '', item.subcategory].filter(Boolean).join(' · ')
   const contents = item.lockerContents?.filter((e) => e.item.trim()) ?? []
   return (
@@ -116,6 +116,20 @@ export function useFitPrintValues() {
       window.removeEventListener('resize', fitValues)
     }
   }, [])
+}
+
+/** A bank account and everything linked to it (cards, FDs, lockers…), framed as one group. */
+export function AccountGroup({ account, linked, render }: { account: Item; linked: Item[]; render: (i: Item, inGroup?: boolean) => ReactNode }) {
+  if (!linked.length) return <>{render(account)}</>
+  return (
+    <div className="pd-group">
+      {render(account)}
+      <div className="pd-group-title">Linked to {account.name} · {linked.length}</div>
+      {linked.map((i) => (
+        <div key={i.id}>{render(i, true)}</div>
+      ))}
+    </div>
+  )
 }
 
 /** The @page rules (A4, footer with date and page numbers). */

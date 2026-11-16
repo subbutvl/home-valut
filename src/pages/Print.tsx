@@ -4,11 +4,11 @@ import { Link } from 'react-router-dom'
 import { Page } from '@/components/AppShell'
 import { CategoryIcon } from '@/components/CategoryIcon'
 import { Card, PageHeader } from '@/components/common'
-import { PageStyle, PrintItem, SecretModePicker } from '@/components/PrintDoc'
+import { AccountGroup, PageStyle, PrintItem, SecretModePicker } from '@/components/PrintDoc'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
 import { CATEGORY_BY_ID, CATEGORY_GROUPS } from '@/lib/categories'
-import { printedOn, type SecretMode } from '@/lib/printing'
+import { groupLinked, printedOn, type SecretMode } from '@/lib/printing'
 import { cn } from '@/lib/utils'
 import { useVault } from '@/lib/vault'
 
@@ -31,9 +31,14 @@ export default function Print() {
     .filter((i) => picked.includes(i.category))
     .filter((i) => !person || i.belongsTo.includes(person))
     .filter((i) => !tag || i.tags.includes(tag))
+  // Cards, FDs, lockers… linked to a printed bank account print inside its group.
+  const { linkedTo, pulled } = groupLinked(chosen)
   const sections = usedCats
     .filter((id) => picked.includes(id))
-    .map((id) => ({ cat: CATEGORY_BY_ID[id], items: chosen.filter((i) => i.category === id).sort((a, b) => a.name.localeCompare(b.name)) }))
+    .map((id) => ({
+      cat: CATEGORY_BY_ID[id],
+      items: chosen.filter((i) => i.category === id && !pulled.has(i.id)).sort((a, b) => a.name.localeCompare(b.name)),
+    }))
     .filter((s) => s.items.length)
 
   const toggle = (id: string) => setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]))
@@ -118,6 +123,7 @@ export default function Print() {
             <p style={{ marginTop: '4pt' }}>Printed on {printedOn()}</p>
             <p className="pd-meta" style={{ marginTop: '6pt' }}>
               {sections.map((s) => `${s.cat.name} (${s.items.length})`).join(' · ') || 'Nothing selected'}
+              {pulled.size ? ` · ${pulled.size} linked ${pulled.size === 1 ? 'item' : 'items'} printed with their bank account` : ''}
               {person ? ` · only ${person}` : ''}
               {tag ? ` · tag “${tag}”` : ''}
             </p>
@@ -132,7 +138,14 @@ export default function Print() {
                 {s.cat.name} · {s.items.length}
               </h2>
               {s.items.map((i) => (
-                <PrintItem key={i.id} item={i} mode={mode} notes={notes} blanks={blanks} custom={custom} />
+                <AccountGroup
+                  key={i.id}
+                  account={i}
+                  linked={linkedTo.get(i.id) ?? []}
+                  render={(x, inGroup) => (
+                    <PrintItem item={x} mode={mode} notes={notes} blanks={blanks} custom={custom} showCategory={inGroup} />
+                  )}
+                />
               ))}
             </section>
           ))}
